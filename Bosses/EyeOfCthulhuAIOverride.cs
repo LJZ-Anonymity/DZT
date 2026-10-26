@@ -8,11 +8,11 @@ namespace DZT.Bosses
     {
         public override bool PreAI(NPC npc)
         {
-            if (npc.type == NPCID.EyeofCthulhu)
-            {
-                CustomEyeAI(npc);
-                return false; // 阻止原版 AI
-            }
+            //if (npc.type == NPCID.EyeofCthulhu)
+            //{
+            //    CustomEyeAI(npc);
+            //    return false; // 阻止原版 AI
+            //}
             return true;
         }
 
