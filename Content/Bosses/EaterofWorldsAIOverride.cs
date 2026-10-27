@@ -1,6 +1,6 @@
 ﻿using Terraria.ModLoader;
 
-namespace DZT.Bosses
+namespace DZT.Content.Bosses
 {
     internal class EaterofWorldsAIOverride : GlobalNPC
     {

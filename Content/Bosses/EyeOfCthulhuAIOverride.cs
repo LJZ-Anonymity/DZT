@@ -2,7 +2,7 @@
 using Terraria.ID;
 using Terraria;
 
-namespace DZT.Bosses
+namespace DZT.Content.Bosses
 {
     internal class EyeOfCthulhuAIOverride: GlobalNPC
     {

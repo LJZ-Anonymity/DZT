@@ -1,0 +1,6 @@
+Items: {
+	DZTDifficultySwitch: {
+		DisplayName: DZT 难度控制器
+		Tooltip: 左键使用以切换 DZT 难度
+	}
+}

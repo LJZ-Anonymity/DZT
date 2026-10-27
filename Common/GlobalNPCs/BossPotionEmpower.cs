@@ -1,4 +1,5 @@
-﻿using Terraria.ModLoader;
+﻿using DZT.Common.Systems;
+using Terraria.ModLoader;
 using Terraria.ID;
 using Terraria;
 using System;
@@ -15,6 +16,7 @@ namespace DZT.Common.GlobalNPCs
 
         public override void ApplyDifficultyAndPlayerScaling(NPC npc, int numPlayers, float balance, float bossAdjustment)
         {
+            if (!ModContent.GetInstance<DZTWorldSystem>().DZTActive) return;
             if (!npc.boss) return;
             scalingApplied = true;
         }
@@ -146,9 +148,8 @@ namespace DZT.Common.GlobalNPCs
                 npc.lifeMax = (int)(npc.lifeMax * bonus);
                 npc.life = npc.lifeMax;
             }
-            if (totalDR > 0f) npc.takenDamageMultiplier *= (1f - totalDR * 0.20f);
+            if (totalDR > 0f) npc.takenDamageMultiplier *= 1f - totalDR * 0.20f;
             if (totalSpeed > 0f) _bossSpeedMultiplier = 1f + totalSpeed * 0.20f;
-
         }
 
         /// <summary>

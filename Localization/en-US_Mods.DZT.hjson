@@ -1,1 +1,6 @@
-
+Items: {
+	DZTDifficultySwitch: {
+		DisplayName: DZT Difficulty Switch
+		Tooltip: ""
+	}
+}
