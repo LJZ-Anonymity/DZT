@@ -3,7 +3,7 @@ using DZT.Content.Items;
 using Terraria.ID;
 using Terraria;
 
-namespace DZT.Common;
+namespace DZT.Common.Players;
 
 public class DZTPlayer : ModPlayer
 {
