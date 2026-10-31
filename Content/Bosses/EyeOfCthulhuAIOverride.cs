@@ -64,8 +64,8 @@ namespace DZT.Content.Bosses
             if (localAI[0] < 0f) localAI[0] = 0f;
 
             // 低血量狂暴判定
-            bool flag2 = npc.life < npc.lifeMax * 0.12;
-            bool flag3 = npc.life < npc.lifeMax * 0.04;
+            bool flag2 = Main.expertMode && npc.life < npc.lifeMax * 0.12;
+            bool flag3 = Main.expertMode && npc.life < npc.lifeMax * 0.04;
             float num4 = flag3 ? 10f : 20f;
 
             // 目标选择
@@ -95,8 +95,8 @@ namespace DZT.Content.Bosses
             if (ai[0] == 3f && ai[1] == 4f && ai[2] > num4) num8 = 0.15f;
             if (ai[0] == 3f && ai[1] == 5f) num8 = 0.05f;
 
-            num8 *= 1.5f;
-            if (flag3) num8 = 0f;
+            if (Main.expertMode) num8 *= 1.5f;
+            if (flag3 && Main.expertMode) num8 = 0f;
 
             // 平滑旋转
             if (npc.rotation < num7)
@@ -142,8 +142,9 @@ namespace DZT.Content.Bosses
             {
                 if (ai[1] == 0f) // 悬浮追踪
                 {
-                    float num10 = 7f;
-                    float num11 = 0.15f;
+                    float num10 = 5f;
+                    float num11 = 0.04f;
+                    if (Main.expertMode) { num11 = 0.15f; num10 = 7f; }
                     if (Main.getGoodWorld) { num11 += 0.05f; num10 += 1f; }
 
                     Vector2 vector = new(npc.position.X + npc.width * 0.5f, npc.position.Y + npc.height * 0.5f);
@@ -178,7 +179,7 @@ namespace DZT.Content.Bosses
                     }
 
                     ai[2] += 1f;
-                    float num16 = 210f;
+                    float num16 = Main.expertMode ? 210f : 600f;
 
                     if (ai[2] >= num16)
                     {
@@ -189,11 +190,11 @@ namespace DZT.Content.Bosses
                         npc.netUpdate = true;
                     }
                     else if ((npc.position.Y + npc.height < player.position.Y && num15 < 500f)
-                          || num15 < 500f)
+                          || (Main.expertMode && num15 < 500f))
                     {
                         if (!player.dead) ai[3] += 1f;
 
-                        float num17 = 44f;
+                        float num17 = Main.expertMode ? 44f : 110f;
                         if (Main.getGoodWorld) num17 *= 0.8f;
 
                         if (ai[3] >= num17)
@@ -208,7 +209,7 @@ namespace DZT.Content.Bosses
                 {
                     npc.rotation = num7;
 
-                    float baseSpeed = 7f;
+                    float baseSpeed = Main.expertMode ? 7f : 6f;
                     if (Main.getGoodWorld) baseSpeed += 1f;
 
                     // 冲刺距离随机倍率
@@ -247,7 +248,7 @@ namespace DZT.Content.Bosses
                     if (ai[2] >= 40f)
                     {
                         npc.velocity *= 0.98f;
-                        npc.velocity *= 0.985f;
+                        if (Main.expertMode) npc.velocity *= 0.985f;
                         if (Main.getGoodWorld) npc.velocity *= 0.99f;
 
                         if (npc.velocity.X > -0.1f && npc.velocity.X < 0.1f) npc.velocity.X = 0f;
@@ -258,7 +259,7 @@ namespace DZT.Content.Bosses
                         npc.rotation = (float)Math.Atan2(npc.velocity.Y, npc.velocity.X) - 1.57f;
                     }
 
-                    int num27 = 100;
+                    int num27 = Main.expertMode ? 100 : 150;
                     if (Main.getGoodWorld) num27 -= 15;
 
                     if (ai[2] >= num27)
@@ -281,7 +282,7 @@ namespace DZT.Content.Bosses
                 }
 
                 // 阶段切换
-                float num28 = 0.65f;
+                float num28 = Main.expertMode ? 0.65f : 0.5f;
                 if (npc.life < npc.lifeMax * num28)
                 {
                     ai[0] = 1f;
@@ -318,7 +319,7 @@ namespace DZT.Content.Bosses
                 int num29 = 20;
                 if (Main.getGoodWorld && npc.life < npc.lifeMax / 3) num29 = 10;
 
-                if (ai[1] % num29 == 0f)
+                if (Main.expertMode && ai[1] % num29 == 0f)
                 {
                     Vector2 vector5 = new(npc.position.X + npc.width * 0.5f, npc.position.Y + npc.height * 0.5f);
                     TrySpawnServants(npc, vector5);
@@ -343,21 +344,16 @@ namespace DZT.Content.Bosses
                         else
                         {
                             SoundEngine.PlaySound(SoundID.NPCDeath1, npc.Center);
-
                             for (int i = 0; i < 2; i++)
                             {
-                                Gore.NewGore(npc.GetSource_FromAI(), npc.position,
-                                    new Vector2(Main.rand.Next(-30, 31) * 0.2f, Main.rand.Next(-30, 31) * 0.2f), 8);
-                                Gore.NewGore(npc.GetSource_FromAI(), npc.position,
-                                    new Vector2(Main.rand.Next(-30, 31) * 0.2f, Main.rand.Next(-30, 31) * 0.2f), 7);
-                                Gore.NewGore(npc.GetSource_FromAI(), npc.position,
-                                    new Vector2(Main.rand.Next(-30, 31) * 0.2f, Main.rand.Next(-30, 31) * 0.2f), 6);
+                                Gore.NewGore(npc.GetSource_FromAI(), npc.position, new Vector2(Main.rand.Next(-30, 31) * 0.2f, Main.rand.Next(-30, 31) * 0.2f), 8);
+                                Gore.NewGore(npc.GetSource_FromAI(), npc.position, new Vector2(Main.rand.Next(-30, 31) * 0.2f, Main.rand.Next(-30, 31) * 0.2f), 7);
+                                Gore.NewGore(npc.GetSource_FromAI(), npc.position, new Vector2(Main.rand.Next(-30, 31) * 0.2f, Main.rand.Next(-30, 31) * 0.2f), 6);
                             }
 
                             for (int i = 0; i < 20; i++)
                             {
-                                Dust.NewDust(npc.position, npc.width, npc.height, DustID.Blood,
-                                    Main.rand.Next(-30, 31) * 0.2f, Main.rand.Next(-30, 31) * 0.2f);
+                                Dust.NewDust(npc.position, npc.width, npc.height, DustID.Blood, Main.rand.Next(-30, 31) * 0.2f, Main.rand.Next(-30, 31) * 0.2f);
                             }
 
                             SoundEngine.PlaySound(SoundID.Roar, npc.Center);
@@ -365,8 +361,7 @@ namespace DZT.Content.Bosses
                     }
                 }
 
-                Dust.NewDust(npc.position, npc.width, npc.height, DustID.Blood,
-                    Main.rand.Next(-30, 31) * 0.2f, Main.rand.Next(-30, 31) * 0.2f);
+                Dust.NewDust(npc.position, npc.width, npc.height, DustID.Blood, Main.rand.Next(-30, 31) * 0.2f, Main.rand.Next(-30, 31) * 0.2f);
 
                 npc.velocity.X *= 0.98f;
                 npc.velocity.Y *= 0.98f;
@@ -379,7 +374,13 @@ namespace DZT.Content.Bosses
 
             #region 第三阶段
 
+            // 低血量防御力削弱
             npc.defense = 0;
+            if (Main.expertMode)
+            {
+                if (flag2) npc.defense = -15;
+                if (flag3) npc.defense = -30;
+            }
 
             if (ai[1] == 0f && flag2) ai[1] = 5f;
 
@@ -393,7 +394,7 @@ namespace DZT.Content.Bosses
                 float num42 = player.position.Y + player.height / 2f - 120f - vector8.Y;
                 float num43 = (float)Math.Sqrt(num41 * num41 + num42 * num42);
 
-                if (num43 > 400f)
+                if (num43 > 400f && Main.expertMode)
                 {
                     num39 += 1f; num40 += 0.05f;
                     if (num43 > 600f)
@@ -436,13 +437,13 @@ namespace DZT.Content.Bosses
                     ai[2] = 0f;
                     ai[3] = 0f;
 
-                    if (npc.life < npc.lifeMax * 0.35) ai[1] = 3f;
+                    if (Main.expertMode && npc.life < npc.lifeMax * 0.35) ai[1] = 3f;
 
                     npc.target = 255;
                     npc.netUpdate = true;
                 }
 
-                if (flag3)
+                if (Main.expertMode && flag3) 
                 {
                     npc.TargetClosest();
                     npc.netUpdate = true;
@@ -457,10 +458,11 @@ namespace DZT.Content.Bosses
                 npc.rotation = num7;
 
                 float baseSpeed = 6.8f;
-                if (ai[3] == 1f) baseSpeed *= 1.15f;
-                if (ai[3] == 2f) baseSpeed *= 1.3f;
+                if (Main.expertMode && ai[3] == 1f) baseSpeed *= 1.15f;
+                if (Main.expertMode && ai[3] == 2f) baseSpeed *= 1.3f;
                 if (Main.getGoodWorld) baseSpeed *= 1.2f;
 
+                // 距离倍率
                 float[] multipliers = [0.5f, 0.75f, 1f, 1.25f, 1.5f];
                 float mult = multipliers[Main.rand.Next(multipliers.Length)];
                 float finalSpeed = baseSpeed * mult;
@@ -491,13 +493,13 @@ namespace DZT.Content.Bosses
             }
             else if (ai[1] == 2f) // 普通冲刺中
             {
-                float num48 = 50f;
+                float num48 = Main.expertMode ? 50f : 40f;
                 ai[2] += 1f;
 
                 if (ai[2] >= num48)
                 {
                     npc.velocity *= 0.97f;
-                    npc.velocity *= 0.98f;
+                    if (Main.expertMode) npc.velocity *= 0.98f;
                     if (npc.velocity.X > -0.1f && npc.velocity.X < 0.1f) npc.velocity.X = 0f;
                     if (npc.velocity.Y > -0.1f && npc.velocity.Y < 0.1f) npc.velocity.Y = 0f;
                 }
@@ -506,7 +508,7 @@ namespace DZT.Content.Bosses
                     npc.rotation = (float)Math.Atan2(npc.velocity.Y, npc.velocity.X) - 1.57f;
                 }
 
-                int num49 = 90;
+                int num49 = Main.expertMode ? 90 : 130;
                 if (ai[2] >= num49)
                 {
                     ai[3] += 1f;
@@ -519,8 +521,7 @@ namespace DZT.Content.Bosses
                         ai[1] = 0f;
                         ai[3] = 0f;
 
-                        if (Main.netMode != NetmodeID.MultiplayerClient
-                            && npc.life < npc.lifeMax * 0.5)
+                        if (Main.expertMode && Main.netMode != NetmodeID.MultiplayerClient && npc.life < npc.lifeMax * 0.5)
                         {
                             ai[1] = 3f;
                             ai[3] += Main.rand.Next(1, 4);
@@ -667,8 +668,7 @@ namespace DZT.Content.Bosses
                         ai[3] = 0f;
 
                         if (npc.target >= 0 && Main.getGoodWorld
-                            && Collision.CanHit(npc.position, npc.width, npc.height,
-                                                player.position, npc.width, npc.height))
+                            && Collision.CanHit(npc.position, npc.width, npc.height, player.position, npc.width, npc.height))
                         {
                             SoundEngine.PlaySound(SoundID.Roar, npc.Center);
                             ai[0] = 2f;
@@ -762,7 +762,7 @@ namespace DZT.Content.Bosses
 
             // 每批最多补 3 只，避免刷屏
             int toSpawn = Math.Min(minionCap - current, 3);
-            float speed = 6f;
+            float speed = Main.expertMode ? 6f : 5f;
             Player player = Main.player[npc.target];
 
             for (int k = 0; k < toSpawn; k++)
@@ -776,8 +776,7 @@ namespace DZT.Content.Bosses
 
                 Vector2 spawnPos = origin + vel * 10f;
 
-                int idx = NPC.NewNPC(npc.GetSource_FromAI(),
-                    (int)spawnPos.X, (int)spawnPos.Y, NPCID.ServantofCthulhu);
+                int idx = NPC.NewNPC(npc.GetSource_FromAI(), (int)spawnPos.X, (int)spawnPos.Y, NPCID.ServantofCthulhu);
 
                 if (idx < Main.maxNPCs)
                 {
@@ -841,8 +840,7 @@ namespace DZT.Content.Bosses
                 }
             }
 
-            // 原弹幕销毁，避免穿透后继续命中
-            projectile.Kill();
+            projectile.Kill(); // 原弹幕销毁，避免穿透后继续命中
         }
     }
 }
