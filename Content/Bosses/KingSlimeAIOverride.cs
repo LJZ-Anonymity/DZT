@@ -301,8 +301,8 @@ namespace DZT.Content.Bosses
                 int x = (int)(npc.position.X + Main.rand.Next(npc.width - 32));
                 int y = (int)(npc.position.Y + Main.rand.Next(npc.height - 32));
                 short num12 = NPCID.BlueSlime;
-                if (Main.rand.NextBool(4))
-                    num12 = SpikedSlimeID; // 535
+                if (Main.expertMode && Main.rand.NextBool(4))
+                    num12 = SpikedSlimeID;
 
                 int num13 = NPC.NewNPC(npc.GetSource_FromAI(), x, y, num12);
                 Main.npc[num13].SetDefaults(num12);
