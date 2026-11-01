@@ -93,6 +93,7 @@ namespace DZT.Common.GlobalNPCs
 
             // 伤害类
             if (target.HasBuff(BuffID.Wrath)) totalDmg += 0.10f; // 怒气药水
+            if (target.HasBuff(BuffID.MagicPower)) totalDmg += 0.20f; // 魔能药水
 
             // 生命类
             if (target.HasBuff(BuffID.Lifeforce)) totalLife += 0.20f; // 生命药水
@@ -103,7 +104,6 @@ namespace DZT.Common.GlobalNPCs
             // 移动速度类
             if (target.HasBuff(BuffID.Swiftness)) totalSpeed += 0.25f; // 敏捷药水
             if (target.HasBuff(BuffID.SugarRush)) totalSpeed += 0.20f; // 糖果冲刺（蛋糕块）
-            if (target.HasBuff(BuffID.Sunflower)) totalSpeed += 0.10f; // 向日葵
 
             // 食物类（取最高等级）
             if (target.HasBuff(BuffID.WellFed3)) // 酒足饭饱
