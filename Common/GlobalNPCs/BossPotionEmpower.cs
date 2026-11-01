@@ -29,15 +29,33 @@ namespace DZT.Common.GlobalNPCs
             // 如果尚未应用加成，则进行一次性的检测与属性强化
             if (!hasApplied)
             {
-                Player target = GetValidTarget(npc);
-                if (target == null) return;
+                int maxDef = 0;
+                float maxDmg = 0f;
+                float maxLife = 0f;
+                float maxDR = 0f;
+                float maxSpeed = 0f;
 
-                CheckPotionBuffs(target, out int totalDef, out float totalDmg, out float totalLife, out float totalDR, out float totalSpeed);
+                bool foundAnyPlayer = false;
+                for (int i = 0; i < Main.maxPlayers; i++) // 遍历所有玩家，取各项药水加成的最大值
+                {
+                    Player p = Main.player[i];
+                    if (p != null && p.active && !p.dead)
+                    {
+                        foundAnyPlayer = true;
+                        CheckPotionBuffs(p, out int pDef, out float pDmg, out float pLife, out float pDR, out float pSpeed);
 
-                // 所有加成均为0，返回
-                if (totalDef <= 0 && totalDmg <= 0f && totalLife <= 0f && totalDR <= 0f && totalSpeed <= 0f) return;
+                        maxDef = Math.Max(maxDef, pDef);
+                        maxDmg = Math.Max(maxDmg, pDmg);
+                        maxLife = Math.Max(maxLife, pLife);
+                        maxDR = Math.Max(maxDR, pDR);
+                        maxSpeed = Math.Max(maxSpeed, pSpeed);
+                    }
+                }
 
-                ApplyBonuses(npc, totalDef, totalDmg, totalLife, totalDR, totalSpeed);
+                // 没有任何玩家存活，或者所有加成均为0，返回
+                if (!foundAnyPlayer || (maxDef <= 0 && maxDmg <= 0f && maxLife <= 0f && maxDR <= 0f && maxSpeed <= 0f)) return;
+
+                ApplyBonuses(npc, maxDef, maxDmg, maxLife, maxDR, maxSpeed);
                 hasApplied = true;
             }
 
@@ -50,35 +68,8 @@ namespace DZT.Common.GlobalNPCs
         }
 
         /// <summary>
-        /// 安全获取 Boss 的目标玩家。优先使用 Boss 当前锁定目标，若无效则寻找最近的玩家。
-        /// </summary>
-        private static Player GetValidTarget(NPC npc)
-        {
-            if (npc.HasValidTarget)
-            {
-                return Main.player[npc.target];
-            }
-
-            int closest = Player.FindClosest(npc.position, npc.width, npc.height);
-            if (closest >= 0 && closest < Main.maxPlayers)
-            {
-                Player p = Main.player[closest];
-                if (p != null && p.active && !p.dead)
-                    return p;
-            }
-
-            return null;
-        }
-
-        /// <summary>
         /// 检测玩家身上的药水 Buff，并累加对应的加成数值
         /// </summary>
-        /// <param name="target">目标玩家</param>
-        /// <param name="totalDef">防御</param>
-        /// <param name="totalDmg">伤害</param>
-        /// <param name="totalLife">生命</param>
-        /// <param name="totalDR">减伤</param>
-        /// <param name="totalSpeed">移速</param>
         private static void CheckPotionBuffs(Player target, out int totalDef, out float totalDmg, out float totalLife, out float totalDR, out float totalSpeed)
         {
             totalDef = 0;
@@ -87,26 +78,31 @@ namespace DZT.Common.GlobalNPCs
             totalDR = 0f;
             totalSpeed = 0f;
 
-            // 防御类
+            #region 防御类
             if (target.HasBuff(BuffID.Ironskin)) totalDef += 8; // 铁皮药水
             if (target.HasBuff(BuffID.CatBast)) totalDef += 8; // 韧皮雕像
+            #endregion
 
-            // 伤害类
+            #region 伤害类
             if (target.HasBuff(BuffID.Wrath)) totalDmg += 0.10f; // 怒气药水
             if (target.HasBuff(BuffID.MagicPower)) totalDmg += 0.20f; // 魔能药水
             if (target.HasBuff(BuffID.Archery)) totalDmg += 0.10f; // 箭术药水
+            #endregion
 
-            // 生命类
+            #region 生命类
             if (target.HasBuff(BuffID.Lifeforce)) totalLife += 0.20f; // 生命药水
+            #endregion
 
-            // 减伤类
+            #region 减伤类
             if (target.HasBuff(BuffID.Endurance)) totalDR += 0.10f; // 耐力药水
+            #endregion
 
-            // 移动速度类
+            #region 移动速度类
             if (target.HasBuff(BuffID.Swiftness)) totalSpeed += 0.25f; // 敏捷药水
             if (target.HasBuff(BuffID.SugarRush)) totalSpeed += 0.20f; // 糖果冲刺（蛋糕块）
+            #endregion
 
-            // 食物类（取最高等级）
+            #region 食物类（取最高等级）
             if (target.HasBuff(BuffID.WellFed3)) // 酒足饭饱
             {
                 totalDef += 4;
@@ -125,15 +121,17 @@ namespace DZT.Common.GlobalNPCs
                 totalDmg += 0.05f;
                 totalSpeed += 0.20f;
             }
+            #endregion
 
-            // --- 模组 Buff 兼容 ---
-            int tankBuff = GetTankBuffID(); // 获取模组中的泰坦药剂包
+            #region 模组 Buff 兼容
+            int tankBuff = GetTankBuffID(); // 泰坦药剂包
             if (tankBuff != -1 && target.HasBuff(tankBuff))
             {
                 totalDef += 8;
                 totalDmg += 0.10f;
                 totalLife += 0.20f;
             }
+            #endregion
         }
 
         /// <summary>
@@ -155,7 +153,7 @@ namespace DZT.Common.GlobalNPCs
         }
 
         /// <summary>
-        /// 若玩家身上有暴怒药水，则本次伤害有概率翻倍
+        /// 若受击的玩家身上有暴怒药水，则本次伤害有概率翻倍
         /// </summary>
         public override void ModifyHitPlayer(NPC npc, Player target, ref Player.HurtModifiers modifiers)
         {
@@ -174,18 +172,15 @@ namespace DZT.Common.GlobalNPCs
         private static int GetTankBuffID()
         {
             if (_tankBuffId != 0) return _tankBuffId;
-            for (int i = 1; i < BuffLoader.BuffCount; i++) // 遍历游戏内注册的所有 Buff
+            for (int i = 1; i < BuffLoader.BuffCount; i++)
             {
-                string name = Lang.GetBuffName(i); // 获取该 Buff 的本地化显示名称
-                if (!string.IsNullOrEmpty(name) && name.Contains("坦克药剂包")) // 模糊匹配名字中包含“坦克药剂包”的 Buff
+                string name = Lang.GetBuffName(i);
+                if (!string.IsNullOrEmpty(name) && name.Contains("坦克药剂包"))
                 {
                     _tankBuffId = i;
-                    //Main.NewText($"成功动态定位模组Buff: ID {i} - {name}", 0, 255, 0);
                     return _tankBuffId;
                 }
             }
-
-            // 如果没找到，标记为 -1，下次不再重复遍历
             _tankBuffId = -1;
             return _tankBuffId;
         }
