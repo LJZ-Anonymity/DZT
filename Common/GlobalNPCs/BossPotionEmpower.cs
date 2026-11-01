@@ -10,9 +10,10 @@ namespace DZT.Common.GlobalNPCs
     {
         public override bool InstancePerEntity => true;
 
-        private float _bossSpeedMultiplier = 1f; // 存储Boss移速倍率，用于每帧应用
+        private const float RageDoubleDamageChance = 0.20f; // BOSS双倍伤害概率
+        private float _bossSpeedMultiplier = 1f; // Boss移速倍率
         private bool scalingApplied; // 是否完成难度缩放
-        private bool hasApplied;     // 是否已应用药水加成
+        private bool hasApplied; // 是否已应用药水加成
 
         public override void ApplyDifficultyAndPlayerScaling(NPC npc, int numPlayers, float balance, float bossAdjustment)
         {
@@ -33,7 +34,7 @@ namespace DZT.Common.GlobalNPCs
 
                 CheckPotionBuffs(target, out int totalDef, out float totalDmg, out float totalLife, out float totalDR, out float totalSpeed);
 
-                // 如果所有加成均为0，直接返回
+                // 所有加成均为0，返回
                 if (totalDef <= 0 && totalDmg <= 0f && totalLife <= 0f && totalDR <= 0f && totalSpeed <= 0f) return;
 
                 ApplyBonuses(npc, totalDef, totalDmg, totalLife, totalDR, totalSpeed);
@@ -153,49 +154,14 @@ namespace DZT.Common.GlobalNPCs
         }
 
         /// <summary>
-        /// 调试用：打印玩家当前所有激活的 Buff（ID / 名称 / 剩余时间）。
-        /// 单人模式下直接传 Main.LocalPlayer 即可。
+        /// 若玩家身上有暴怒药水，则本次伤害有概率翻倍
         /// </summary>
-        public static void DumpPlayerBuffs(Player player)
+        public override void ModifyHitPlayer(NPC npc, Player target, ref Player.HurtModifiers modifiers)
         {
-            // 使用 LocalPlayer 作为兜底（单人档专用）
-            player ??= Main.LocalPlayer;
-
-            Main.NewText($"===== [{player.name}] Buff 列表明细 =====", 255, 255, 0); // 黄色提示
-
-            int activeCount = 0;
-
-            // Player.buffType 和 buffTime 是平行数组，长度固定（原版为 44，tModLoader 可能扩展）
-            for (int i = 0; i < player.buffType.Length; i++)
+            if (!npc.boss || !scalingApplied) return;
+            if (target.HasBuff(BuffID.Rage) && Main.rand.NextFloat() < RageDoubleDamageChance)
             {
-                int buffId = player.buffType[i];
-
-                // buffType 为 0 表示该槽位为空，跳过
-                if (buffId <= 0) continue;
-
-                // 获取剩余时间（tick），并转为秒
-                int timeLeft = player.buffTime[i];
-                float secondsLeft = timeLeft / 60f;
-
-                // 使用 Lang.GetBuffName 获取本地化的 Buff 名称[reference:0]
-                string buffName = Lang.GetBuffName(buffId);
-
-                // 输出：槽位索引 | Buff ID | 名称 | 剩余秒数
-                Main.NewText(
-                    $"  槽位{i:D2} | ID:{buffId:D3} | {buffName} | {secondsLeft:F1}s",
-                    180, 220, 255 // 淡蓝色
-                );
-
-                activeCount++;
-            }
-
-            if (activeCount == 0)
-            {
-                Main.NewText("  （该玩家当前没有任何激活的 Buff）", 255, 100, 100);
-            }
-            else
-            {
-                Main.NewText($"===== 共 {activeCount} 个激活 Buff =====", 255, 255, 0);
+                modifiers.FinalDamage *= 2f; // 本次伤害翻倍
             }
         }
 
