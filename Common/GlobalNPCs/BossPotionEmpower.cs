@@ -104,7 +104,7 @@ namespace DZT.Common.GlobalNPCs
 
             #region 原版 Buff
             if (target.HasBuff(BuffID.Ironskin)) vanillaDef += 8; // 铁皮药水
-            if (target.HasBuff(BuffID.CatBast)) vanillaDef += 8; // 韧皮雕像
+            if (target.HasBuff(BuffID.CatBast)) vanillaDef += 5; // 韧皮雕像
 
             if (target.HasBuff(BuffID.Wrath)) vanillaDmg += 0.10f; // 怒气药水
             if (target.HasBuff(BuffID.MagicPower)) vanillaDmg += 0.20f; // 魔能药水
