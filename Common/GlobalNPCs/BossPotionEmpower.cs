@@ -94,6 +94,7 @@ namespace DZT.Common.GlobalNPCs
             // 伤害类
             if (target.HasBuff(BuffID.Wrath)) totalDmg += 0.10f; // 怒气药水
             if (target.HasBuff(BuffID.MagicPower)) totalDmg += 0.20f; // 魔能药水
+            if (target.HasBuff(BuffID.Archery)) totalDmg += 0.10f; // 箭术药水
 
             // 生命类
             if (target.HasBuff(BuffID.Lifeforce)) totalLife += 0.20f; // 生命药水
