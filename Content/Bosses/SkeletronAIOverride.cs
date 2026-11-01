@@ -18,7 +18,7 @@ namespace DZT.Content.Bosses
             {
                 if (!NPC.AnyNPCs(NPCID.SkeletronHead))
                 {
-                    //npc.active = false;
+                    npc.active = false;
                     return true;
                 }
 
@@ -30,8 +30,7 @@ namespace DZT.Content.Bosses
                 return false;
             }
 
-            TestSummonCaster(npc); // 骷髅王强制召唤法师
-
+            //TestSummonCaster(npc); // 骷髅王强制召唤法师
             return true;
         }
 
