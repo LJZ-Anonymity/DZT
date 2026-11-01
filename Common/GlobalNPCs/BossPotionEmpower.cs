@@ -1,5 +1,6 @@
-﻿using DZT.Common.Systems;
-using Terraria.ModLoader;
+﻿using Terraria.ModLoader;
+using DZT.Common.Systems;
+using DZT.Common.Utils;
 using Terraria.ID;
 using Terraria;
 using System;
@@ -11,9 +12,18 @@ namespace DZT.Common.GlobalNPCs
         public override bool InstancePerEntity => true;
 
         private const float RageDoubleDamageChance = 0.20f; // BOSS双倍伤害概率
+        private readonly bool _hasLazyLoaded = false;
         private float _bossSpeedMultiplier = 1f; // Boss移速倍率
         private bool scalingApplied; // 是否完成难度缩放
         private bool hasApplied; // 是否已应用药水加成
+
+        private static int _tankBuffId = -2;
+        private static int _rangerBuffId = -2;
+        private static int _combatBuffId = -2;
+        private static int _magicBuffId = -2;
+        private static int _summonerBuffId = -2;
+        private static int _ultimateBuffId = -2;
+        private static int _fishingBuffId = -2;
 
         public override void ApplyDifficultyAndPlayerScaling(NPC npc, int numPlayers, float balance, float bossAdjustment)
         {
@@ -25,8 +35,7 @@ namespace DZT.Common.GlobalNPCs
         public override void PostAI(NPC npc)
         {
             if (!npc.boss || !scalingApplied) return;
-
-            // 如果尚未应用加成，则进行一次性的检测与属性强化
+            if (!_hasLazyLoaded) LazyLoad();
             if (!hasApplied)
             {
                 int maxDef = 0;
@@ -68,70 +77,111 @@ namespace DZT.Common.GlobalNPCs
         }
 
         /// <summary>
+        /// 懒加载
+        /// </summary>
+        private static void LazyLoad()
+        {
+            _combatBuffId = BuffUtils.GetModBuffID("战斗药剂包", "Combat Combination");
+            _magicBuffId = BuffUtils.GetModBuffID("魔法药剂包", "Magic Combination");
+            _rangerBuffId = BuffUtils.GetModBuffID("射手药剂包", "Ranger Combination");
+            _summonerBuffId = BuffUtils.GetModBuffID("召唤师药剂包", "Summoner Combination");
+            _tankBuffId = BuffUtils.GetModBuffID("坦克药剂包", "Tank Combination");
+            _ultimateBuffId = BuffUtils.GetModBuffID("万能药剂包", "Ultimate Combination");
+            _fishingBuffId = BuffUtils.GetModBuffID("钓鱼药剂包", "Fishing Combination");
+        }
+
+        /// <summary>
         /// 检测玩家身上的药水 Buff，并累加对应的加成数值
         /// </summary>
         private static void CheckPotionBuffs(Player target, out int totalDef, out float totalDmg, out float totalLife, out float totalDR, out float totalSpeed)
         {
-            totalDef = 0;
-            totalDmg = 0f;
-            totalLife = 0f;
-            totalDR = 0f;
-            totalSpeed = 0f;
+            // 原版 Buff
+            int vanillaDef = 0;
+            float vanillaDmg = 0f;
+            float vanillaLife = 0f;
+            float vanillaDR = 0f;
+            float vanillaSpeed = 0f;
 
-            #region 防御类
-            if (target.HasBuff(BuffID.Ironskin)) totalDef += 8; // 铁皮药水
-            if (target.HasBuff(BuffID.CatBast)) totalDef += 8; // 韧皮雕像
+            #region 原版 Buff
+            if (target.HasBuff(BuffID.Ironskin)) vanillaDef += 8; // 铁皮药水
+            if (target.HasBuff(BuffID.CatBast)) vanillaDef += 8; // 韧皮雕像
+
+            if (target.HasBuff(BuffID.Wrath)) vanillaDmg += 0.10f; // 怒气药水
+            if (target.HasBuff(BuffID.MagicPower)) vanillaDmg += 0.20f; // 魔能药水
+            if (target.HasBuff(BuffID.Archery)) vanillaDmg += 0.10f; // 箭术药水
+
+            if (target.HasBuff(BuffID.Lifeforce)) vanillaLife += 0.20f; // 生命药水
+            if (target.HasBuff(BuffID.Endurance)) vanillaDR += 0.10f; // 耐力药水
+
+            if (target.HasBuff(BuffID.Swiftness)) vanillaSpeed += 0.25f; // 敏捷药水
+            if (target.HasBuff(BuffID.SugarRush)) vanillaSpeed += 0.20f; // 糖果冲刺
+
+            // 食物类
+            if (target.HasBuff(BuffID.WellFed3)) { vanillaDef += 4; vanillaDmg += 0.10f; vanillaSpeed += 0.40f; }
+            else if (target.HasBuff(BuffID.WellFed2)) { vanillaDef += 3; vanillaDmg += 0.075f; vanillaSpeed += 0.30f; }
+            else if (target.HasBuff(BuffID.WellFed)) { vanillaDef += 2; vanillaDmg += 0.05f; vanillaSpeed += 0.20f; }
             #endregion
 
-            #region 伤害类
-            if (target.HasBuff(BuffID.Wrath)) totalDmg += 0.10f; // 怒气药水
-            if (target.HasBuff(BuffID.MagicPower)) totalDmg += 0.20f; // 魔能药水
-            if (target.HasBuff(BuffID.Archery)) totalDmg += 0.10f; // 箭术药水
-            #endregion
+            // 模组药剂等效（多个药剂包同类属性取最大值）
+            int packDef = 0;
+            float packDmg = 0f;
+            float packLife = 0f;
+            float packDR = 0f;
+            float packSpeed = 0f;
 
-            #region 生命类
-            if (target.HasBuff(BuffID.Lifeforce)) totalLife += 0.20f; // 生命药水
-            #endregion
-
-            #region 减伤类
-            if (target.HasBuff(BuffID.Endurance)) totalDR += 0.10f; // 耐力药水
-            #endregion
-
-            #region 移动速度类
-            if (target.HasBuff(BuffID.Swiftness)) totalSpeed += 0.25f; // 敏捷药水
-            if (target.HasBuff(BuffID.SugarRush)) totalSpeed += 0.20f; // 糖果冲刺（蛋糕块）
-            #endregion
-
-            #region 食物类（取最高等级）
-            if (target.HasBuff(BuffID.WellFed3)) // 酒足饭饱
+            #region 模组兼容
+            #region AlchemistNPC Lite
+            if (_combatBuffId != -1 && target.HasBuff(_combatBuffId)) // 战斗药剂包
             {
-                totalDef += 4;
-                totalDmg += 0.10f;
-                totalSpeed += 0.40f;
+                packDef = Math.Max(packDef, 8); // 铁皮8防
+                packDmg = Math.Max(packDmg, 0.10f); // 怒气10%增伤
+                packLife = Math.Max(packLife, 0.20f); // 生命力20%生命
+                packDR = Math.Max(packDR, 0.10f); // 耐力10%减伤
             }
-            else if (target.HasBuff(BuffID.WellFed2)) // 很满意
+
+            if (_tankBuffId != -1 && target.HasBuff(_tankBuffId)) // 坦克药剂包
             {
-                totalDef += 3;
-                totalDmg += 0.075f;
-                totalSpeed += 0.30f;
+                packDef = Math.Max(packDef, 8); // 铁皮8防
+                packLife = Math.Max(packLife, 0.20f); // 生命力20%生命
+                packDR = Math.Max(packDR, 0.10f); // 耐力10%减伤
             }
-            else if (target.HasBuff(BuffID.WellFed)) // 吃得好
+
+            if (_magicBuffId != -1 && target.HasBuff(_magicBuffId)) // 魔法药剂包
             {
-                totalDef += 2;
-                totalDmg += 0.05f;
-                totalSpeed += 0.20f;
+                packDmg = Math.Max(packDmg, 0.30f); // 魔能20% + 怒气10%增伤
             }
+
+            if (_rangerBuffId != -1 && target.HasBuff(_rangerBuffId)) // 射手药剂包
+            {
+                packDmg = Math.Max(packDmg, 0.20f); // 箭术10% + 怒气10%增伤
+            }
+
+            if (_summonerBuffId != -1 && target.HasBuff(_summonerBuffId)) // 召唤师药剂包
+            {
+                packDmg = Math.Max(packDmg, 0.10f); // 怒气10%增伤
+            }
+
+            if (_fishingBuffId != -1 && target.HasBuff(_fishingBuffId)) // 钓鱼药剂包
+            {
+                packDef = Math.Max(packDef, 8); // 铁皮8防
+            }
+
+            if (_ultimateBuffId != -1 && target.HasBuff(_ultimateBuffId)) // 万能药剂包
+            {
+                packDef = Math.Max(packDef, 8); // 铁皮8防
+                packDmg = Math.Max(packDmg, 0.40f); // 魔能20% + 箭术10% + 怒气10%增伤
+                packLife = Math.Max(packLife, 0.20f); // 生命力20%生命
+                packDR = Math.Max(packDR, 0.10f); // 耐力10%减伤
+            }
+            #endregion
             #endregion
 
-            #region 模组 Buff 兼容
-            int tankBuff = GetTankBuffID(); // 泰坦药剂包
-            if (tankBuff != -1 && target.HasBuff(tankBuff))
-            {
-                totalDef += 8;
-                totalDmg += 0.10f;
-                totalLife += 0.20f;
-            }
-            #endregion
+            // 最终结果 = 原版单体总和 + 药剂包最高值
+            totalDef = vanillaDef + packDef;
+            totalDmg = vanillaDmg + packDmg;
+            totalLife = vanillaLife + packLife;
+            totalDR = vanillaDR + packDR;
+            totalSpeed = vanillaSpeed + packSpeed;
         }
 
         /// <summary>
@@ -153,37 +203,25 @@ namespace DZT.Common.GlobalNPCs
         }
 
         /// <summary>
-        /// 若受击的玩家身上有暴怒药水，则本次伤害有概率翻倍
+        /// 若受击的玩家有暴怒药水效果，则本次伤害有概率翻倍
         /// </summary>
         public override void ModifyHitPlayer(NPC npc, Player target, ref Player.HurtModifiers modifiers)
         {
             if (!npc.boss || !scalingApplied) return;
-            if (target.HasBuff(BuffID.Rage) && Main.rand.NextFloat() < RageDoubleDamageChance)
+            if (Main.rand.NextFloat() >= RageDoubleDamageChance) return;
+
+            bool hasRage = target.HasBuff(BuffID.Rage); // 暴怒药水
+            #region 含暴怒药水效果的模组药水
+            bool hasCombatCombo = (_combatBuffId != -1 && target.HasBuff(_combatBuffId)); // 战斗药剂包
+            bool hasMagicCombo = (_magicBuffId != -1 && target.HasBuff(_magicBuffId)); // 魔法药剂包
+            bool hasRangerCombo = (_rangerBuffId != -1 && target.HasBuff(_rangerBuffId)); // 射手药剂包
+            bool hasSummonerCombo = (_summonerBuffId != -1 && target.HasBuff(_summonerBuffId)); // 召唤师药剂包
+            bool hasUltimateCombo = (_ultimateBuffId != -1 && target.HasBuff(_ultimateBuffId)); // 终极药剂包
+            #endregion
+            if (hasRage || hasCombatCombo || hasMagicCombo || hasRangerCombo || hasSummonerCombo || hasUltimateCombo)
             {
                 modifiers.FinalDamage *= 2f; // 本次伤害翻倍
             }
         }
-
-        #region 兼容 AchemistNPC Lite 模组
-        private static int _tankBuffId = 0;
-        /// <summary>
-        /// 动态获取“坦克药剂包”的 Buff ID。
-        /// </summary>
-        private static int GetTankBuffID()
-        {
-            if (_tankBuffId != 0) return _tankBuffId;
-            for (int i = 1; i < BuffLoader.BuffCount; i++)
-            {
-                string name = Lang.GetBuffName(i);
-                if (!string.IsNullOrEmpty(name) && name.Contains("坦克药剂包"))
-                {
-                    _tankBuffId = i;
-                    return _tankBuffId;
-                }
-            }
-            _tankBuffId = -1;
-            return _tankBuffId;
-        }
-        #endregion
     }
 }
