@@ -6,7 +6,7 @@ using DZT.Common.Systems;
 using Terraria.ID;
 using Terraria;
 
-namespace DZT.Content.Items;
+namespace DZT.Content.Items.DZTDifficultySwitch;
 
 public class DZTDifficultySwitch : ModItem
 {

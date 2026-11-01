@@ -3,4 +3,13 @@ Items: {
 		DisplayName: DZT 难度控制器
 		Tooltip: 左键使用以切换 DZT 难度
 	}
+
+	GolemTestWeapon: {
+		DisplayName: 石巨人测试剑
+		Tooltip:
+			'''
+			专门用于测试石巨人缩放机制
+			每次攻击扣除目标最大生命值 5%
+			'''
+	}
 }

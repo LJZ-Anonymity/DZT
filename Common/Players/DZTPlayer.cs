@@ -1,7 +1,7 @@
 ﻿using Terraria.ModLoader;
-using DZT.Content.Items;
 using Terraria.ID;
 using Terraria;
+using DZT.Content.Items.DZTDifficultySwitch;
 
 namespace DZT.Common.Players;
 

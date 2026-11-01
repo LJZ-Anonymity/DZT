@@ -1,6 +1,15 @@
 Items: {
 	DZTDifficultySwitch: {
 		DisplayName: DZT Difficulty Switch
-		Tooltip: ""
+		Tooltip: Left-click to toggle DZT difficulty
+	}
+
+	GolemTestWeapon: {
+		DisplayName: Golem Test Weapon
+		Tooltip:
+			'''
+			Designed specifically to test the Golem's scaling mechanics.
+			Deals exactly 5% of the target's maximum health per hit.
+			'''
 	}
 }
