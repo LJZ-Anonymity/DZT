@@ -16,7 +16,7 @@ namespace DZT.Content.Bosses
 
         private const short SpikedSlimeID = 535; // 尖刺史莱姆内部ID
 
-        #region 史莱姆王
+        #region 史莱姆王：初始体型为原来的50%，体型随血量降低变大，最大为原体型200%，移动速度随体型增大而变快（与原来移动速度随体型减小变快一致）
 
         public override bool PreAI(NPC npc)
         {
@@ -431,8 +431,9 @@ namespace DZT.Content.Bosses
 
         public override void ModifyIncomingHit(NPC npc, ref NPC.HitModifiers modifiers)
         {
-            if (npc.type == NPCID.BlueSlime
-                && ModContent.GetInstance<DZTWorldSystem>().DZTActive)
+            if (npc.type == NPCID.BlueSlime &&
+                ModContent.GetInstance<DZTWorldSystem>().DZTActive &&
+                IsKingSlimeAlive())
             {
                 modifiers.FinalDamage *= 0.9f;
             }
@@ -443,7 +444,7 @@ namespace DZT.Content.Bosses
             if (npc.type != NPCID.BlueSlime) return;
             if (!ModContent.GetInstance<DZTWorldSystem>().DZTActive) return;
             if (!projectile.friendly || projectile.hostile) return;
-
+            if (!IsKingSlimeAlive()) return;
             if (!Main.rand.NextBool(3)) return;
 
             modifiers.FinalDamage *= 0f;
@@ -473,6 +474,19 @@ namespace DZT.Content.Bosses
             projectile.Kill();
         }
 
+        /// <summary>
+        /// 当前世界中是否有存活的史莱姆王
+        /// </summary>
+        private static bool IsKingSlimeAlive()
+        {
+            for (int i = 0; i < Main.maxNPCs; i++)
+            {
+                NPC npc = Main.npc[i];
+                if (npc.active && npc.type == NPCID.KingSlime && npc.life > 0)
+                    return true;
+            }
+            return false;
+        }
         #endregion
 
         #region 尖刺史莱姆：射弹频率加快 50%
