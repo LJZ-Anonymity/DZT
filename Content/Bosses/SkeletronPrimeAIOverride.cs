@@ -1,4 +1,5 @@
-﻿using Terraria.ModLoader;
+﻿using DZT.Common.Systems;
+using Terraria.ModLoader;
 using Terraria.ID;
 using Terraria;
 
@@ -8,6 +9,7 @@ namespace DZT.Content.Bosses
     {
         public override void ModifyIncomingHit(NPC npc, ref NPC.HitModifiers modifiers)
         {
+            if (!ModContent.GetInstance<DZTWorldSystem>().DZTActive) return;
             if (npc.type == NPCID.SkeletronPrime)
             {
                 int handCount = 0;
@@ -28,6 +30,7 @@ namespace DZT.Content.Bosses
     {
         public override void PrepareBombToBlow(Projectile projectile)
         {
+            if (!ModContent.GetInstance<DZTWorldSystem>().DZTActive) return;
             if (projectile.type == ProjectileID.BombSkeletronPrime)
             {
                 projectile.ai[1] = 1f;
