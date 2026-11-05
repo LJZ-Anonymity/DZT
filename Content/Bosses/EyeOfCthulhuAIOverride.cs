@@ -10,6 +10,8 @@ namespace DZT.Content.Bosses
 {
     internal class EyeOfCthulhuAIOverride : GlobalNPC
     {
+        private const float SpeedFactor = 3f; // 加速倍率
+
         #region 减伤/判断冲刺状态
 
         // 冲刺期间 20% 伤害减免
@@ -66,7 +68,9 @@ namespace DZT.Content.Bosses
             // 低血量狂暴判定
             bool flag2 = Main.expertMode && npc.life < npc.lifeMax * 0.12;
             bool flag3 = Main.expertMode && npc.life < npc.lifeMax * 0.04;
-            float num4 = flag3 ? 10f : 20f;
+
+            // 高速冲刺持续时间（间隔）
+            float num4 = (flag3 ? 10f : 20f) / SpeedFactor;
 
             // 目标选择
             if (npc.target < 0 || npc.target == 255
@@ -88,12 +92,12 @@ namespace DZT.Content.Bosses
 
             // 旋转插值速度
             float num8 = 0f;
-            if (ai[0] == 0f && ai[1] == 0f) num8 = 0.02f;
-            if (ai[0] == 0f && ai[1] == 2f && ai[2] > 40f) num8 = 0.05f;
-            if (ai[0] == 3f && ai[1] == 0f) num8 = 0.05f;
-            if (ai[0] == 3f && ai[1] == 2f && ai[2] > 40f) num8 = 0.08f;
-            if (ai[0] == 3f && ai[1] == 4f && ai[2] > num4) num8 = 0.15f;
-            if (ai[0] == 3f && ai[1] == 5f) num8 = 0.05f;
+            if (ai[0] == 0f && ai[1] == 0f) num8 = 0.02f * SpeedFactor;
+            if (ai[0] == 0f && ai[1] == 2f && ai[2] > 40f) num8 = 0.05f * SpeedFactor;
+            if (ai[0] == 3f && ai[1] == 0f) num8 = 0.05f * SpeedFactor;
+            if (ai[0] == 3f && ai[1] == 2f && ai[2] > 40f) num8 = 0.08f * SpeedFactor;
+            if (ai[0] == 3f && ai[1] == 4f && ai[2] > num4) num8 = 0.15f * SpeedFactor;
+            if (ai[0] == 3f && ai[1] == 5f) num8 = 0.05f * SpeedFactor;
 
             if (Main.expertMode) num8 *= 1.5f;
             if (flag3 && Main.expertMode) num8 = 0f;
@@ -142,10 +146,11 @@ namespace DZT.Content.Bosses
             {
                 if (ai[1] == 0f) // 悬浮追踪
                 {
-                    float num10 = 5f;
-                    float num11 = 0.04f;
-                    if (Main.expertMode) { num11 = 0.15f; num10 = 7f; }
-                    if (Main.getGoodWorld) { num11 += 0.05f; num10 += 1f; }
+                    // 移速
+                    float num10 = 5f * SpeedFactor;
+                    float num11 = 0.04f * SpeedFactor;
+                    if (Main.expertMode) { num11 = 0.15f * SpeedFactor; num10 = 7f * SpeedFactor; }
+                    if (Main.getGoodWorld) { num11 += 0.05f * SpeedFactor; num10 += 1f * SpeedFactor; }
 
                     Vector2 vector = new(npc.position.X + npc.width * 0.5f, npc.position.Y + npc.height * 0.5f);
                     float num12 = player.position.X + player.width / 2f - vector.X;
@@ -179,7 +184,8 @@ namespace DZT.Content.Bosses
                     }
 
                     ai[2] += 1f;
-                    float num16 = Main.expertMode ? 210f : 600f;
+                    // 悬浮→冲刺间隔
+                    float num16 = (Main.expertMode ? 210f : 600f) / SpeedFactor;
 
                     if (ai[2] >= num16)
                     {
@@ -194,7 +200,8 @@ namespace DZT.Content.Bosses
                     {
                         if (!player.dead) ai[3] += 1f;
 
-                        float num17 = Main.expertMode ? 44f : 110f;
+                        // 小眼睛召唤间隔
+                        float num17 = (Main.expertMode ? 44f : 110f) / SpeedFactor;
                         if (Main.getGoodWorld) num17 *= 0.8f;
 
                         if (ai[3] >= num17)
@@ -209,7 +216,8 @@ namespace DZT.Content.Bosses
                 {
                     npc.rotation = num7;
 
-                    float baseSpeed = Main.expertMode ? 7f : 6f;
+                    // 冲刺速度
+                    float baseSpeed = (Main.expertMode ? 7f : 6f) * SpeedFactor;
                     if (Main.getGoodWorld) baseSpeed += 1f;
 
                     // 冲刺距离随机倍率
@@ -259,8 +267,10 @@ namespace DZT.Content.Bosses
                         npc.rotation = (float)Math.Atan2(npc.velocity.Y, npc.velocity.X) - 1.57f;
                     }
 
-                    int num27 = Main.expertMode ? 100 : 150;
+                    // 冲刺持续时间（间隔）
+                    int num27 = (int)((Main.expertMode ? 100 : 150) / SpeedFactor);
                     if (Main.getGoodWorld) num27 -= 15;
+                    if (num27 < 1) num27 = 1;
 
                     if (ai[2] >= num27)
                     {
@@ -316,8 +326,11 @@ namespace DZT.Content.Bosses
 
                 if (Main.getGoodWorld) npc.reflectsProjectiles = true;
 
-                int num29 = 20;
-                if (Main.getGoodWorld && npc.life < npc.lifeMax / 3) num29 = 10;
+                // 小眼睛召唤间隔
+                int num29 = (int)(20 / SpeedFactor);
+                if (num29 < 1) num29 = 1;
+                if (Main.getGoodWorld && npc.life < npc.lifeMax / 3) num29 = (int)(10 / SpeedFactor);
+                if (num29 < 1) num29 = 1;
 
                 if (Main.expertMode && ai[1] % num29 == 0f)
                 {
@@ -370,7 +383,7 @@ namespace DZT.Content.Bosses
                 return;
             }
 
-            #endregion 
+            #endregion
 
             #region 第三阶段
 
@@ -386,8 +399,9 @@ namespace DZT.Content.Bosses
 
             if (ai[1] == 0f) // 悬浮追踪
             {
-                float num39 = 6f;
-                float num40 = 0.07f;
+                // 移速
+                float num39 = 6f * SpeedFactor;
+                float num40 = 0.07f * SpeedFactor;
 
                 Vector2 vector8 = new(npc.position.X + npc.width * 0.5f, npc.position.Y + npc.height * 0.5f);
                 float num41 = player.position.X + player.width / 2f - vector8.X;
@@ -396,14 +410,14 @@ namespace DZT.Content.Bosses
 
                 if (num43 > 400f && Main.expertMode)
                 {
-                    num39 += 1f; num40 += 0.05f;
+                    num39 += 1f * SpeedFactor; num40 += 0.05f * SpeedFactor;
                     if (num43 > 600f)
                     {
-                        num39 += 1f; num40 += 0.05f;
-                        if (num43 > 800f) { num39 += 1f; num40 += 0.05f; }
+                        num39 += 1f * SpeedFactor; num40 += 0.05f * SpeedFactor;
+                        if (num43 > 800f) { num39 += 1f * SpeedFactor; num40 += 0.05f * SpeedFactor; }
                     }
                 }
-                if (Main.getGoodWorld) { num39 += 1f; num40 += 0.1f; }
+                if (Main.getGoodWorld) { num39 += 1f * SpeedFactor; num40 += 0.1f * SpeedFactor; }
 
                 num43 = num39 / num43;
                 num41 *= num43;
@@ -431,7 +445,8 @@ namespace DZT.Content.Bosses
                 }
 
                 ai[2] += 1f;
-                if (ai[2] >= 200f)
+                // 悬浮→冲刺间隔
+                if (ai[2] >= 200f / SpeedFactor)
                 {
                     ai[1] = 1f;
                     ai[2] = 0f;
@@ -443,7 +458,7 @@ namespace DZT.Content.Bosses
                     npc.netUpdate = true;
                 }
 
-                if (Main.expertMode && flag3) 
+                if (Main.expertMode && flag3)
                 {
                     npc.TargetClosest();
                     npc.netUpdate = true;
@@ -457,7 +472,8 @@ namespace DZT.Content.Bosses
                 SoundEngine.PlaySound(SoundID.Item36, npc.Center);
                 npc.rotation = num7;
 
-                float baseSpeed = 6.8f;
+                // 冲刺速度
+                float baseSpeed = 6.8f * SpeedFactor;
                 if (Main.expertMode && ai[3] == 1f) baseSpeed *= 1.15f;
                 if (Main.expertMode && ai[3] == 2f) baseSpeed *= 1.3f;
                 if (Main.getGoodWorld) baseSpeed *= 1.2f;
@@ -493,7 +509,8 @@ namespace DZT.Content.Bosses
             }
             else if (ai[1] == 2f) // 普通冲刺中
             {
-                float num48 = Main.expertMode ? 50f : 40f;
+                // 冲刺持续时间（间隔）
+                float num48 = (Main.expertMode ? 50f : 40f) / SpeedFactor;
                 ai[2] += 1f;
 
                 if (ai[2] >= num48)
@@ -508,7 +525,10 @@ namespace DZT.Content.Bosses
                     npc.rotation = (float)Math.Atan2(npc.velocity.Y, npc.velocity.X) - 1.57f;
                 }
 
-                int num49 = Main.expertMode ? 90 : 130;
+                // 冲刺持续时间（间隔）
+                int num49 = (int)((Main.expertMode ? 90 : 130) / SpeedFactor);
+                if (num49 < 1) num49 = 1;
+
                 if (ai[2] >= num49)
                 {
                     ai[3] += 1f;
@@ -549,7 +569,8 @@ namespace DZT.Content.Bosses
                     npc.TargetClosest();
                     player = Main.player[npc.target];
 
-                    float num50 = 20f;
+                    // 高速冲刺速度
+                    float num50 = 20f * SpeedFactor;
                     Vector2 vector10 = new(npc.position.X + npc.width * 0.5f, npc.position.Y + npc.height * 0.5f);
                     float num51 = player.position.X + player.width / 2f - vector10.X;
                     float num52 = player.position.Y + player.height / 2f - vector10.Y;
@@ -638,7 +659,7 @@ namespace DZT.Content.Bosses
                     SoundEngine.PlaySound(SoundID.NPCDeath1, npc.Center);
                 }
 
-                float num62 = num4;
+                float num62 = num4; // num4 已 / SpeedFactor
                 ai[2] += 1f;
 
                 if (ai[2] == num62 && Vector2.Distance(npc.position, player.position) < 200f)
@@ -655,7 +676,8 @@ namespace DZT.Content.Bosses
                     npc.rotation = (float)Math.Atan2(npc.velocity.Y, npc.velocity.X) - 1.57f;
                 }
 
-                float num63 = num62 + 13f;
+                // 额外 13 帧也按系数缩短
+                float num63 = num62 + 13f / SpeedFactor;
                 if (ai[2] >= num63)
                 {
                     npc.netUpdate = true;
@@ -687,8 +709,9 @@ namespace DZT.Content.Bosses
             else if (ai[1] == 5f) // 上浮后撤
             {
                 float num64 = 600f;
-                float num65 = 9f;
-                float num66 = 0.3f;
+                // 移速
+                float num65 = 9f * SpeedFactor;
+                float num66 = 0.3f * SpeedFactor;
 
                 Vector2 vector11 = new(npc.position.X + npc.width * 0.5f, npc.position.Y + npc.height * 0.5f);
                 float num67 = player.position.X + player.width / 2f - vector11.X;
@@ -720,7 +743,8 @@ namespace DZT.Content.Bosses
                 }
 
                 ai[2] += 1f;
-                if (ai[2] >= 70f)
+                // 后撤→高速冲刺间隔
+                if (ai[2] >= 70f / SpeedFactor)
                 {
                     npc.TargetClosest();
                     ai[1] = 3f;
