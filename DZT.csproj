@@ -10,6 +10,9 @@
 	<ItemGroup>
 	  <Compile Remove="Cthulhu.cs" />
 	</ItemGroup>
+	<ItemGroup>
+	  <None Remove="Content\Bosses\TheTwinsAIOverride.cs~RF11bcbd33.TMP" />
+	</ItemGroup>
 
 	<!-- References -->
 
