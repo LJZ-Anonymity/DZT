@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework;
+﻿using System.Collections.Generic;
+using Microsoft.Xna.Framework;
 using DZT.Common.Systems;
 using Terraria.ModLoader;
 using Terraria.ID;
@@ -9,18 +10,29 @@ namespace DZT.Content.Bosses
 {
     internal class GolemAIOverride : GlobalNPC
     {
+        public override bool InstancePerEntity => true;
+
+        // 记录头/手/本体各自已跨过的 5% 档位（key 用 whoAmI）
+        private readonly Dictionary<int, int> partTriggerCounts = [];
+
+        // 当前目标缩放值
+        private float targetScale = 1f;
+
+        // 首次触发前不接管缩放，避免干扰原版
+        private bool scaleActive = false;
+
         public override bool? CanFallThroughPlatforms(NPC npc)
         {
             if (npc.type != NPCID.Golem || !ModContent.GetInstance<DZTWorldSystem>().DZTActive)
                 return null;
+
             if (npc.velocity.Y < 0f) return false;
+
             if (npc.velocity.Y >= 0f)
             {
                 int startX = (int)((npc.position.X + 8) / 16f);
                 int endX = (int)((npc.position.X + npc.width - 8) / 16f);
                 int startY = (int)((npc.position.Y + npc.height) / 16f);
-
-                // 向下扫描 2 格，检查是否有平台或实心方块
                 int endY = startY + 2;
 
                 bool hitPlatform = false;
@@ -36,53 +48,97 @@ namespace DZT.Content.Bosses
                             if (tile.HasTile)
                             {
                                 if (TileID.Sets.Platforms[tile.TileType])
-                                {
                                     hitPlatform = true;
-                                }
                                 else if (Main.tileSolid[tile.TileType] && !Main.tileSolidTop[tile.TileType])
-                                {
                                     hitSolid = true;
-                                }
                             }
                         }
                     }
                 }
 
-                if (hitSolid) return false; // 不穿透实心方块
-                if (hitPlatform) return true; // 穿透平台
+                if (hitSolid) return false;
+                if (hitPlatform) return true;
             }
             return null;
         }
 
         public override void PostAI(NPC npc)
         {
-            if (npc.type != NPCID.Golem || !ModContent.GetInstance<DZTWorldSystem>().DZTActive) return;
+            if (!ModContent.GetInstance<DZTWorldSystem>().DZTActive) return;
 
-            #region 每次承受 5% 伤害随机缩放
-            // localAI[2] 上次触发缩放时的生命值
-            // localAI[3] 目标缩放值
-            if (npc.localAI[2] == 0f && npc.life > 0)
+            if (npc.type == NPCID.Golem)
+                PostAI_Body(npc);
+            else if (IsGolemPart(npc.type))
+                PostAI_Part(npc);
+        }
+
+        private void PostAI_Body(NPC npc)
+        {
+            if (npc.life <= 0) return;
+
+            CleanupStaleKeys(npc);
+
+            // ---------- 阶段判定 ----------
+            bool phase1 = false;
+            for (int i = 0; i < Main.maxNPCs; i++)
             {
-                npc.localAI[2] = npc.life;
-                npc.localAI[3] = 1f;
+                NPC part = Main.npc[i];
+                if (part.active && part.type == NPCID.GolemHead &&
+                    BelongsTo(part, npc) && part.life > 0)
+                {
+                    phase1 = true;
+                    break;
+                }
             }
 
-            if (npc.life > npc.localAI[2])
-                npc.localAI[2] = npc.life;
+            bool shouldScale = false;
 
-            if (npc.localAI[2] - npc.life >= npc.lifeMax * 0.05f)
+            if (phase1)
             {
-                npc.localAI[2] = npc.life;
-                npc.localAI[3] = Main.rand.NextFloat(0.5f, 1.5f);
+                // 一阶段，头 + 双拳，各自独立 5%
+                for (int i = 0; i < Main.maxNPCs; i++)
+                {
+                    NPC part = Main.npc[i];
+                    if (!part.active) continue;
+                    if (part.type != NPCID.GolemHead &&
+                        part.type != NPCID.GolemFistLeft &&
+                        part.type != NPCID.GolemFistRight) continue;
+                    if (!BelongsTo(part, npc)) continue;
+                    if (part.lifeMax <= 0) continue;
+
+                    if (CheckThreshold(part.whoAmI, part.life, part.lifeMax))
+                        shouldScale = true;
+                }
+            }
+            else
+            {
+                // 二阶段只按本体身体 5%
+                if (npc.lifeMax > 0)
+                {
+                    if (CheckThreshold(npc.whoAmI, npc.life, npc.lifeMax))
+                        shouldScale = true;
+                }
             }
 
-            if (Math.Abs(npc.scale - npc.localAI[3]) > 0.01f)
+            if (shouldScale)
             {
-                float nextScale = MathHelper.Lerp(npc.scale, npc.localAI[3], 0.05f);
+                scaleActive = true;
+                targetScale = Main.rand.NextFloat(0.5f, 1.5f);
+            }
 
+            if (!scaleActive) return;
+
+            // 本体平滑缩放
+            if (Math.Abs(npc.scale - targetScale) > 0.001f)
+            {
+                float next = Math.Abs(npc.scale - targetScale) > 0.01f
+                    ? MathHelper.Lerp(npc.scale, targetScale, 0.05f)
+                    : targetScale;
+
+                // 脚底中心锚定，避免掉进地里
                 Vector2 bottomCenter = new(npc.Center.X, npc.Bottom.Y);
 
-                npc.scale = nextScale;
+                npc.scale = next;
                 npc.width = (int)(114f * npc.scale);
                 npc.height = (int)(160f * npc.scale);
 
@@ -90,34 +146,150 @@ namespace DZT.Content.Bosses
                 npc.position.Y = bottomCenter.Y - npc.height;
 
                 npc.netUpdate = true;
+            }
 
-                for (int i = 0; i < Main.maxNPCs; i++)
+            // 同帧强制同步所有归属部件
+            for (int i = 0; i < Main.maxNPCs; i++)
+            {
+                NPC child = Main.npc[i];
+                if (!child.active || !IsGolemPart(child.type)) continue;
+                if (!BelongsTo(child, npc)) continue;
+
+                SyncPartScale(child, npc.scale);
+            }
+        }
+
+        private static void PostAI_Part(NPC part)
+        {
+            NPC body = FindGolemBody(part);
+            if (body == null || !body.active) return;
+            SyncPartScale(part, body.scale);
+        }
+
+        /// <summary>
+        /// 同步身体缩放
+        /// </summary>
+        private static void SyncPartScale(NPC part, float s)
+        {
+            float baseSize = GetBaseSize(part.type);
+            int w = (int)(baseSize * s);
+            int h = (int)(baseSize * s);
+
+            if (Math.Abs(part.scale - s) > 0.0001f ||
+                part.width != w || part.height != h)
+            {
+                Vector2 oldCenter = part.Center;
+
+                part.scale = s;
+                part.width = w;
+                part.height = h;
+
+                part.Center = oldCenter;
+                part.netUpdate = true;
+            }
+        }
+
+        // 首次记录基线不触发；跨过新的 5% 档位返回 true
+        private bool CheckThreshold(int key, int life, int lifeMax)
+        {
+            if (lifeMax <= 0) return false;
+
+            float lostRatio = 1f - ((float)life / lifeMax);
+            int currentCount = (int)(lostRatio / 0.05f);
+
+            if (!partTriggerCounts.TryGetValue(key, out int recorded))
+            {
+                partTriggerCounts[key] = currentCount;
+                return false;
+            }
+
+            if (currentCount > recorded)
+            {
+                partTriggerCounts[key] = currentCount;
+                return true;
+            }
+
+            return false;
+        }
+
+        // 清理已失效的 whoAmI，防止复用污染
+        private void CleanupStaleKeys(NPC body)
+        {
+            List<int> toRemove = null;
+
+            foreach (int k in partTriggerCounts.Keys)
+            {
+                if (k < 0 || k >= Main.maxNPCs)
                 {
-                    NPC child = Main.npc[i];
-                    if (child.active && (child.type == NPCID.GolemHead || child.type == NPCID.GolemFistLeft || child.type == NPCID.GolemFistRight || child.type == NPCID.GolemHeadFree))
-                    {
-                        if (Vector2.DistanceSquared(child.Center, npc.Center) < 4000f * 4000f)
-                        {
-                            Vector2 childOldCenter = child.Center;
-                            child.scale = npc.scale;
+                    (toRemove ??= []).Add(k);
+                    continue;
+                }
 
-                            if (child.type == NPCID.GolemHead) { child.width = (int)(80f * npc.scale); child.height = (int)(80f * npc.scale); }
-                            else if (child.type == NPCID.GolemFistLeft || child.type == NPCID.GolemFistRight) { child.width = (int)(40f * npc.scale); child.height = (int)(40f * npc.scale); }
-                            else if (child.type == NPCID.GolemHeadFree) { child.width = (int)(60f * npc.scale); child.height = (int)(60f * npc.scale); }
+                NPC n = Main.npc[k];
+                bool valid = n.active && (
+                    n.type == NPCID.Golem ||
+                    (IsGolemPart(n.type) && BelongsTo(n, body))
+                );
 
-                            child.Center = childOldCenter;
-                            child.netUpdate = true;
-                        }
-                    }
+                if (!valid)
+                    (toRemove ??= []).Add(k);
+            }
+
+            if (toRemove != null)
+                foreach (int k in toRemove)
+                    partTriggerCounts.Remove(k);
+        }
+
+        private static bool IsGolemPart(int type)
+        {
+            return type == NPCID.GolemHead ||
+                   type == NPCID.GolemHeadFree ||
+                   type == NPCID.GolemFistLeft ||
+                   type == NPCID.GolemFistRight;
+        }
+
+        private static float GetBaseSize(int type)
+        {
+            if (type == NPCID.GolemHead) return 80f;
+            if (type == NPCID.GolemHeadFree) return 60f;
+            return 40f; // 左右拳
+        }
+
+        private static bool BelongsTo(NPC part, NPC body)
+        {
+            if ((int)part.ai[1] == body.whoAmI) return true;
+            if (part.realLife == body.whoAmI) return true;
+            return Vector2.DistanceSquared(part.Center, body.Center) < 2000f * 2000f;
+        }
+
+        private static NPC FindGolemBody(NPC part)
+        {
+            int idx = (int)part.ai[1];
+            if (idx >= 0 && idx < Main.maxNPCs)
+            {
+                NPC n = Main.npc[idx];
+                if (n.active && n.type == NPCID.Golem) return n;
+            }
+
+            idx = part.realLife;
+            if (idx >= 0 && idx < Main.maxNPCs)
+            {
+                NPC n = Main.npc[idx];
+                if (n.active && n.type == NPCID.Golem) return n;
+            }
+
+            NPC closest = null;
+            float best = float.MaxValue;
+            for (int i = 0; i < Main.maxNPCs; i++)
+            {
+                NPC n = Main.npc[i];
+                if (n.active && n.type == NPCID.Golem)
+                {
+                    float d = Vector2.DistanceSquared(n.Center, part.Center);
+                    if (d < best) { best = d; closest = n; }
                 }
             }
-            else if (npc.scale != npc.localAI[3])
-            {
-                npc.scale = npc.localAI[3];
-                npc.width = (int)(114f * npc.scale);
-                npc.height = (int)(160f * npc.scale);
-            }
-            #endregion
+            return closest;
         }
     }
 }
