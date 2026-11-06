@@ -12,6 +12,8 @@ namespace DZT.Common.GlobalNPCs
         public override bool InstancePerEntity => true;
 
         private const float RageDoubleDamageChance = 0.20f; // BOSS双倍伤害概率
+        private const float RageDoubleDamageMultiplier = 2f; // 暴怒伤害倍率
+        private const float PotionEmpowerScale = 0.20f; // BOSS获得药水效果的比例
         private readonly bool _hasLazyLoaded = false;
         private float _bossSpeedMultiplier = 1f; // Boss移速倍率
         private bool scalingApplied; // 是否完成难度缩放
@@ -190,16 +192,16 @@ namespace DZT.Common.GlobalNPCs
         private void ApplyBonuses(NPC npc, int totalDef, float totalDmg, float totalLife, float totalDR, float totalSpeed)
         {
             hasApplied = true; // 标记已应用
-            if (totalDef > 0) npc.defense += (int)Math.Ceiling(totalDef * 0.20f);
-            if (totalDmg > 0f) npc.damage = (int)(npc.defDamage * (1f + totalDmg * 0.20f));
+            if (totalDef > 0) npc.defense += (int)Math.Ceiling(totalDef * PotionEmpowerScale);
+            if (totalDmg > 0f) npc.damage = (int)(npc.defDamage * (1f + totalDmg * PotionEmpowerScale));
             if (totalLife > 0f)
             {
-                float bonus = 1f + totalLife * 0.20f;
+                float bonus = 1f + totalLife * PotionEmpowerScale;
                 npc.lifeMax = (int)(npc.lifeMax * bonus);
                 npc.life = npc.lifeMax;
             }
-            if (totalDR > 0f) npc.takenDamageMultiplier *= 1f - totalDR * 0.20f;
-            if (totalSpeed > 0f) _bossSpeedMultiplier = 1f + totalSpeed * 0.20f;
+            if (totalDR > 0f) npc.takenDamageMultiplier *= 1f - totalDR * PotionEmpowerScale;
+            if (totalSpeed > 0f) _bossSpeedMultiplier = 1f + totalSpeed * PotionEmpowerScale;
         }
 
         /// <summary>
@@ -220,7 +222,7 @@ namespace DZT.Common.GlobalNPCs
             #endregion
             if (hasRage || hasCombatCombo || hasMagicCombo || hasRangerCombo || hasSummonerCombo || hasUltimateCombo)
             {
-                modifiers.FinalDamage *= 2f; // 本次伤害翻倍
+                modifiers.FinalDamage *= RageDoubleDamageMultiplier; // 本次伤害翻倍
             }
         }
     }

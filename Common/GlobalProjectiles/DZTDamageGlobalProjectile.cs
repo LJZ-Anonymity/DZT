@@ -6,13 +6,15 @@ namespace DZT.Common.GlobalProjectiles;
 
 public class DZTDamageGlobalProjectile : GlobalProjectile
 {
+    private const float ProjectileDamageBonus = 1.40f; // 弹幕伤害提高倍率
+
     public override void ModifyHitPlayer(Projectile projectile, Player target, ref Player.HurtModifiers modifiers)
     {
         if (projectile.hostile && !projectile.friendly &&
             ModContent.GetInstance<DZTWorldSystem>().DZTActive)
         {
             float compensation = GetProjectileLegendaryCompensation();
-            modifiers.SourceDamage *= compensation * 1.40f;
+            modifiers.SourceDamage *= compensation * ProjectileDamageBonus;
         }
     }
 
