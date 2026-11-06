@@ -10,7 +10,9 @@ namespace DZT.Content.Bosses
 {
     internal class BrainofCthulhuAIOverride : GlobalNPC
     {
+        private const float DamageBonusMultiplier = 1.1f; // 伤害较传奇难度增加的倍率
         private const int ForcedCreeperCount = 50; // 生成的飞眼怪数量
+        private const int Phase2DefenseBonus = 9; // 二阶段防御增加值
 
         #region 伤害/防御
         public override void PostAI(NPC npc)
@@ -19,11 +21,11 @@ namespace DZT.Content.Bosses
                 && ModContent.GetInstance<DZTWorldSystem>().DZTActive)
             {
                 // 伤害较传奇难度+10%
-                npc.damage = (int)(npc.defDamage * 1.1f);
+                npc.damage = (int)(npc.defDamage * DamageBonusMultiplier);
 
                 // 二阶段防御+9
                 if (npc.ai[0] < 0f)
-                    npc.defense = npc.defDefense + 9;
+                    npc.defense = npc.defDefense + Phase2DefenseBonus;
             }
         }
         #endregion

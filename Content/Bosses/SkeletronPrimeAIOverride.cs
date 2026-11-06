@@ -7,6 +7,8 @@ namespace DZT.Content.Bosses
 {
     internal class SkeletronPrimeAIOverride : GlobalNPC
     {
+        private const float DamageReductionPerHand = 0.05f; // 每只手提供的减伤比例
+
         public override void ModifyIncomingHit(NPC npc, ref NPC.HitModifiers modifiers)
         {
             if (!ModContent.GetInstance<DZTWorldSystem>().DZTActive) return;
@@ -21,7 +23,7 @@ namespace DZT.Content.Bosses
                         handCount++;
                     }
                 }
-                modifiers.FinalDamage *= (1f - handCount * 0.05f);
+                modifiers.FinalDamage *= (1f - handCount * DamageReductionPerHand);
             }
         }
     }

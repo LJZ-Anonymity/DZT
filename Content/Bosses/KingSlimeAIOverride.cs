@@ -12,9 +12,11 @@ namespace DZT.Content.Bosses
         private const float KingSlimeVanillaScale = 1.25f; // 默认体型
         private const float KingSlimeMinScale = KingSlimeVanillaScale * 0.5f; // 最小体型
         private const float KingSlimeMaxScale = KingSlimeVanillaScale * 2.0f; // 最大体型
-        private const int KingSlimePointCacheMax = 200; // 候选传送点数组的最大容量
 
-        private const short SpikedSlimeID = 535; // 尖刺史莱姆内部ID
+        private const int KingSlimeReflectChanceDenominator = 3; // 蓝史莱姆反弹概率分母
+        private const float KingSlimeDamageReduction = 0.1f; // 蓝史莱姆减伤量
+
+        private const float KingSlimeRangedAttackFrequencyIncrease = 0.5f; // 尖刺史莱姆射弹频率增加量
 
         #region 史莱姆王：初始体型为原来的50%，体型随血量降低变大，最大为原体型200%，移动速度随体型增大而变快（与原来移动速度随体型减小变快一致）
 
@@ -302,7 +304,7 @@ namespace DZT.Content.Bosses
                 int y = (int)(npc.position.Y + Main.rand.Next(npc.height - 32));
                 short num12 = NPCID.BlueSlime;
                 if (Main.expertMode && Main.rand.NextBool(4))
-                    num12 = SpikedSlimeID;
+                    num12 = NPCID.SlimeSpiked;
 
                 int num13 = NPC.NewNPC(npc.GetSource_FromAI(), x, y, num12);
                 Main.npc[num13].SetDefaults(num12);
@@ -339,7 +341,7 @@ namespace DZT.Content.Bosses
             }
 
             Point point = Main.player[targetPlayer].Center.ToTileCoordinates();
-            Point[] cache = new Point[KingSlimePointCacheMax];
+            Point[] cache = new Point[200];
 
             if (BuildKingSlimeTeleportCache(npc, targetPlayer, point.X, point.Y, 10, 7, cache, out int cacheSize))
             {
@@ -435,7 +437,7 @@ namespace DZT.Content.Bosses
                 ModContent.GetInstance<DZTWorldSystem>().DZTActive &&
                 IsKingSlimeAlive())
             {
-                modifiers.FinalDamage *= 0.9f;
+                modifiers.FinalDamage *= (1f - KingSlimeDamageReduction);
             }
         }
 
@@ -445,7 +447,7 @@ namespace DZT.Content.Bosses
             if (!ModContent.GetInstance<DZTWorldSystem>().DZTActive) return;
             if (!projectile.friendly || projectile.hostile) return;
             if (!IsKingSlimeAlive()) return;
-            if (!Main.rand.NextBool(3)) return;
+            if (Main.rand.NextBool(KingSlimeReflectChanceDenominator)) return;
 
             modifiers.FinalDamage *= 0f;
 
@@ -493,13 +495,14 @@ namespace DZT.Content.Bosses
 
         public override void PostAI(NPC npc)
         {
-            if (npc.type != SpikedSlimeID) return;
+            if (npc.type != NPCID.SlimeSpiked) return;
             if (!ModContent.GetInstance<DZTWorldSystem>().DZTActive) return;
 
-            // 原版每帧 localAI[0] -= 1f，这里额外再减 0.5f
-            // 总递减 1.5f/帧，冷却时间变为原来的 2/3，频率加快 50%
+            // 原版每帧 localAI[0] -= 1f。
+            // 额外递减量 = 原版递减速度 × 频率增加比例，
+            // 使总递减为 1 + 0.5 = 1.5f/帧，冷却变为原来的 1/1.5 = 2/3，频率提升 50%。
             if (npc.localAI[0] > 0f)
-                npc.localAI[0] -= 0.5f;
+                npc.localAI[0] -= 1f * KingSlimeRangedAttackFrequencyIncrease;
         }
 
         #endregion

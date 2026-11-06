@@ -9,6 +9,11 @@ namespace DZT.Content.Bosses
 {
     internal class TheTwinsAIOverride : GlobalNPC
     {
+        private const float SprintDistanceMultiplier = 1.2f; // 冲刺速度倍率
+        private const float SprintDamageReduction = 0.25f; // 二阶段冲刺减伤量
+        private const int ExtraProjectileCount = 5; // 追加弹幕数量
+        private const float ExtraTurnSpeed = 0.5f; // 二阶段转向速度增加量
+
         public override bool AppliesToEntity(NPC entity, bool lateInstantiation)
         {
             return entity.type == NPCID.Retinazer || entity.type == NPCID.Spazmatism;
@@ -21,14 +26,14 @@ namespace DZT.Content.Bosses
             // 二阶段冲刺速度与距离 +20%
             if (npc.ai[0] == 3f && npc.ai[1] == 2f && npc.ai[2] == 0f)
             {
-                npc.velocity *= 1.2f;
+                npc.velocity *= SprintDistanceMultiplier;
             }
 
             // 二阶段转向速度 +50%
             if (npc.ai[0] == 3f && npc.ai[1] == 0f)
             {
                 float baseTurn = (npc.type == NPCID.Spazmatism) ? 0.2f : 0.1f;
-                float extraTurn = baseTurn * 0.5f;
+                float extraTurn = baseTurn * ExtraTurnSpeed;
 
                 float targetAngle = (float)(Math.Atan2(
                     Main.player[npc.target].Center.Y - npc.Center.Y,
@@ -60,7 +65,7 @@ namespace DZT.Content.Bosses
         {
             if (!ModContent.GetInstance<DZTWorldSystem>().DZTActive) return;
             if (npc.ai[0] == 3f && (npc.ai[1] == 1f || npc.ai[1] == 2f))
-                modifiers.FinalDamage *= 0.75f; // 二阶段冲刺时 25% 减伤
+                modifiers.FinalDamage *= (1 - SprintDamageReduction); // 二阶段冲刺时 25% 减伤
         }
 
         /// <summary>
@@ -111,7 +116,7 @@ namespace DZT.Content.Bosses
             float baseAngle = (float)Math.Atan2(toPlayer.Y, toPlayer.X);
             int damage = npc.defDamage / 2;
 
-            for (int i = 0; i < 5; i++)
+            for (int i = 0; i < ExtraProjectileCount; i++)
             {
                 float spread = MathHelper.Lerp(-0.25f, 0.25f, i / 4f);
                 float angle = baseAngle + spread;
@@ -154,7 +159,7 @@ namespace DZT.Content.Bosses
             int projType = npc.ai[0] == 0f ? ProjectileID.EyeLaser : ProjectileID.DeathLaser;
             float speed = npc.ai[0] == 0f ? 8f : 10f; // 第二阶段弹速更快
 
-            for (int i = 0; i < 5; i++)
+            for (int i = 0; i < ExtraProjectileCount; i++)
             {
                 float spread = MathHelper.Lerp(-0.2f, 0.2f, i / 4f);
                 float angle = baseAngle + spread;

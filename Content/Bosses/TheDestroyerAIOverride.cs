@@ -12,6 +12,8 @@ namespace DZT.Content.Bosses
         // 必须开启每个实体独立实例，才能为各节保存状态
         public override bool InstancePerEntity => true;
 
+        private const float UnfurledDamageReduction = 0.9999f; // 未展开时减伤倍率
+
         // 标记该条毁灭者是否已完成初始化与展开
         public bool Initialized = false;
         public bool HasUnfurled = false;
@@ -60,7 +62,7 @@ namespace DZT.Content.Bosses
                     // 只要未展开，全体节享受 99.99% 伤害减免
                     if (!headData.HasUnfurled)
                     {
-                        modifiers.FinalDamage *= 0.0001f;
+                        modifiers.FinalDamage *= (1 - UnfurledDamageReduction);
                     }
                 }
             }
@@ -122,6 +124,8 @@ namespace DZT.Content.Bosses
 
     internal class DestroyerSegmentPatch : ModSystem
     {
+        private const int TotalSegments = 100; // 总体节数
+
         public override void Load()
         {
             var method = typeof(NPC).GetMethod(nameof(NPC.GetDestroyerSegmentsCount),
@@ -131,7 +135,7 @@ namespace DZT.Content.Bosses
             {
                 Func<Func<NPC, int>, NPC, int> hookDelegate = (orig, self) =>
                 {
-                    return 98;
+                    return TotalSegments - 2;
                 };
 
                 MonoModHooks.Add(method, hookDelegate);

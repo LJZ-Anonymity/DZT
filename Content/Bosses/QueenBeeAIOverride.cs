@@ -10,7 +10,10 @@ namespace DZT.Content.Bosses
 {
     internal class QueenBeeAIOverride : GlobalNPC
     {
-        private const int QueenBeeStingerID = 719; // 蜂王毒刺弹幕 ID
+        private const float StingerAccuracyBonus = 0.33f; // 毒刺精准度提升比例
+        private const float DashDamageReduction = 0.15f; // 冲刺减伤比例
+        private const float BaseEnrageFactor = 0.75f; // 基础激怒系数
+        private const float StingerSpeed = 24f; // 毒刺速度
 
         #region 冲刺减伤 / 冲刺判定
 
@@ -20,7 +23,7 @@ namespace DZT.Content.Bosses
                 && ModContent.GetInstance<DZTWorldSystem>().DZTActive
                 && IsDashing(npc))
             {
-                modifiers.FinalDamage *= 0.85f; // 15% 伤害减免
+                modifiers.FinalDamage *= (1f - DashDamageReduction); // 15% 伤害减免
             }
         }
 
@@ -84,7 +87,7 @@ namespace DZT.Content.Bosses
 
             // DZT 始终获得 0.75 的基础激怒系数
             if (ModContent.GetInstance<DZTWorldSystem>().DZTActive)
-                enrageFactor += 0.75f;
+                enrageFactor += BaseEnrageFactor;
 
             // 高于地表 +1
             if ((double)(npc.position.Y / 16f) < Main.worldSurface)
@@ -503,7 +506,7 @@ namespace DZT.Content.Bosses
                 stingerBaseSpeed += 6f * enrageFactor;
 
                 if (ModContent.GetInstance<DZTWorldSystem>().DZTActive)
-                    stingerBaseSpeed = 24f; // 毒刺速度固定为 24
+                    stingerBaseSpeed = StingerSpeed; // 毒刺速度固定为 24
 
                 Vector2 stingerSpawnPoint = new(npc.position.X + npc.width / 2f + Main.rand.Next(20) * npc.direction,
                                                 npc.position.Y + npc.height * 0.8f);
@@ -543,8 +546,8 @@ namespace DZT.Content.Bosses
 
                         if (ModContent.GetInstance<DZTWorldSystem>().DZTActive)
                         {
-                            spreadX *= 0.67f;
-                            spreadY *= 0.67f;
+                            spreadX *= (1f - StingerAccuracyBonus);
+                            spreadY *= (1f - StingerAccuracyBonus);
                         }
 
                         int minSpreadX = (int)spreadX;
@@ -566,7 +569,7 @@ namespace DZT.Content.Bosses
 
                         int projIdx = Projectile.NewProjectile(npc.GetSource_FromAI(),
                             stingerSpawnPoint.X, stingerSpawnPoint.Y,
-                            targetX, targetY, QueenBeeStingerID, 11, 0f, Main.myPlayer);
+                            targetX, targetY, ProjectileID.QueenBeeStinger, 11, 0f, Main.myPlayer);
                         Main.projectile[projIdx].timeLeft = 300;
                     }
                 }

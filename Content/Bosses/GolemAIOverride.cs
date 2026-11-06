@@ -12,6 +12,10 @@ namespace DZT.Content.Bosses
     {
         public override bool InstancePerEntity => true;
 
+        private const float ScaleThreshold = 0.05f; // 触发缩放的血量比例阈值
+        private const float MinScale = 0.5f; // 最小体型倍率
+        private const float MaxScale = 1.5f; // 最大体型倍率
+
         // 记录头/手/本体各自已跨过的 5% 档位（key 用 whoAmI）
         private readonly Dictionary<int, int> partTriggerCounts = [];
 
@@ -78,7 +82,7 @@ namespace DZT.Content.Bosses
 
             CleanupStaleKeys(npc);
 
-            // ---------- 阶段判定 ----------
+            // 阶段判定
             bool phase1 = false;
             for (int i = 0; i < Main.maxNPCs; i++)
             {
@@ -123,7 +127,7 @@ namespace DZT.Content.Bosses
             if (shouldScale)
             {
                 scaleActive = true;
-                targetScale = Main.rand.NextFloat(0.5f, 1.5f);
+                targetScale = Main.rand.NextFloat(MinScale, MaxScale);
             }
 
             if (!scaleActive) return;
@@ -195,7 +199,7 @@ namespace DZT.Content.Bosses
             if (lifeMax <= 0) return false;
 
             float lostRatio = 1f - ((float)life / lifeMax);
-            int currentCount = (int)(lostRatio / 0.05f);
+            int currentCount = (int)(lostRatio / ScaleThreshold);
 
             if (!partTriggerCounts.TryGetValue(key, out int recorded))
             {

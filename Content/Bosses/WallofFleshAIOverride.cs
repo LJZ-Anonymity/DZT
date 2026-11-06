@@ -7,6 +7,8 @@ namespace DZT.Content.Bosses
 {
     internal class WallofFleshAIOverride : GlobalNPC
     {
+        private const int DefensePerHungry = 1; // 每只饿鬼为血肉墙提供的防御值
+
         public override bool PreAI(NPC npc)
         {
             if (npc.type == NPCID.WallofFlesh
@@ -35,7 +37,7 @@ namespace DZT.Content.Bosses
                     }
                 }
             }
-            wof.defense = wof.defDefense + hungryCount;
+            wof.defense = wof.defDefense + hungryCount * DefensePerHungry;
         }
 
         /// <summary>

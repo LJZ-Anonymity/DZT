@@ -11,6 +11,11 @@ namespace DZT.Content.Bosses
     internal class EyeOfCthulhuAIOverride : GlobalNPC
     {
         private const float SpeedFactor = 3f; // 加速倍率
+        private const float DashDamageReduction = 0.2f; // 冲刺减伤比例
+        private const int ServantMinionCapPhase1 = 7; // 一阶段小克眼上限
+        private const int ServantMinionCapPhase2 = 11; // 二阶段小克眼上限
+        private const int PredictiveDashInterval = 3; // 每 N 次冲刺有 1 次预判
+        private static readonly float[] DashDistanceMultipliers = [0.5f, 0.75f, 1f, 1.25f, 1.5f]; // 冲刺距离倍率候选
 
         #region 减伤/判断冲刺状态
 
@@ -21,7 +26,7 @@ namespace DZT.Content.Bosses
                 && ModContent.GetInstance<DZTWorldSystem>().DZTActive
                 && IsDashing(npc))
             {
-                modifiers.FinalDamage *= 0.8f;
+                modifiers.FinalDamage *= (1f - DashDamageReduction);
             }
         }
 
@@ -221,8 +226,7 @@ namespace DZT.Content.Bosses
                     if (Main.getGoodWorld) baseSpeed += 1f;
 
                     // 冲刺距离随机倍率
-                    float[] multipliers = [0.5f, 0.75f, 1f, 1.25f, 1.5f];
-                    float mult = multipliers[Main.rand.Next(multipliers.Length)];
+                    float mult = DashDistanceMultipliers[Main.rand.Next(DashDistanceMultipliers.Length)];
                     float finalSpeed = baseSpeed * mult;
 
                     Vector2 vector4 = new(npc.position.X + npc.width * 0.5f, npc.position.Y + npc.height * 0.5f);
@@ -479,8 +483,7 @@ namespace DZT.Content.Bosses
                 if (Main.getGoodWorld) baseSpeed *= 1.2f;
 
                 // 距离倍率
-                float[] multipliers = [0.5f, 0.75f, 1f, 1.25f, 1.5f];
-                float mult = multipliers[Main.rand.Next(multipliers.Length)];
+                float mult = DashDistanceMultipliers[Main.rand.Next(DashDistanceMultipliers.Length)];
                 float finalSpeed = baseSpeed * mult;
 
                 Vector2 vector9 = new(npc.position.X + npc.width * 0.5f, npc.position.Y + npc.height * 0.5f);
@@ -576,8 +579,7 @@ namespace DZT.Content.Bosses
                     float num52 = player.position.Y + player.height / 2f - vector10.Y;
 
                     // 高速冲刺也应用距离随机
-                    float[] multipliers = [0.5f, 0.75f, 1f, 1.25f, 1.5f];
-                    float mult = multipliers[Main.rand.Next(multipliers.Length)];
+                    float mult = DashDistanceMultipliers[Main.rand.Next(DashDistanceMultipliers.Length)];
                     num50 *= mult;
 
                     float num53 = Math.Abs(player.velocity.X) + Math.Abs(player.velocity.Y) / 4f;
@@ -766,13 +768,13 @@ namespace DZT.Content.Bosses
         // 每 3 次冲刺有一次预判（localAI[0] 保存已开始的冲刺次数）
         private static bool IsPredictiveDash(NPC npc)
         {
-            return npc.localAI[0] % 3f == 0f;
+            return npc.localAI[0] % PredictiveDashInterval == 0f;
         }
 
         // 召唤小眼睛：一阶段上限 7，二阶段上限 11
         private static void TrySpawnServants(NPC npc, Vector2 origin)
         {
-            int minionCap = npc.ai[0] == 0f ? 7 : 11; // 阶段切换小眼睛召唤上限
+            int minionCap = npc.ai[0] == 0f ? ServantMinionCapPhase1 : ServantMinionCapPhase2; // 阶段切换小眼睛召唤上限
 
             int current = 0;
             for (int i = 0; i < Main.maxNPCs; i++)
@@ -823,18 +825,17 @@ namespace DZT.Content.Bosses
 
     public class DZTEyeReflectProjectile : GlobalProjectile
     {
+        private const int ReflectChanceDenominator = 4; // 反弹射弹概率分母
+
         public override void ModifyHitNPC(Projectile projectile, NPC target, ref NPC.HitModifiers modifiers)
         {
-            // 只处理 DZT 难度下射出的友好弹幕
             if (!projectile.friendly || projectile.hostile) return;
             if (target.type != NPCID.EyeofCthulhu) return;
             if (!ModContent.GetInstance<DZTWorldSystem>().DZTActive) return;
-
-            // 仅在克苏鲁之眼冲刺时触发
             if (!EyeOfCthulhuAIOverride.IsDashing(target)) return;
 
             // 25% 概率判定
-            if (!Main.rand.NextBool(4)) return;
+            if (!Main.rand.NextBool(ReflectChanceDenominator)) return;
 
             // 取消本次伤害
             modifiers.FinalDamage *= 0f;

@@ -9,7 +9,7 @@ namespace DZT.Content.Bosses
 {
     internal class SkeletronAIOverride : GlobalNPC
     {
-        public const short WaterSphereNPCID = 33; // 水球 NPC ID
+        private const int CastsPerTeleport = 5; // 传送所需的弹幕发射次数
 
         public override bool PreAI(NPC npc)
         {
@@ -100,7 +100,7 @@ namespace DZT.Content.Bosses
                 for (int i = 0; i < 3; i++) // 发射 3 发水球
                 {
                     Vector2 shootVel = npc.DirectionTo(player.Center).RotatedByRandom(0.2) * 8f;
-                    int sphereIdx = NPC.NewNPC(npc.GetSource_FromAI(), (int)npc.Center.X, (int)npc.Center.Y, WaterSphereNPCID);
+                    int sphereIdx = NPC.NewNPC(npc.GetSource_FromAI(), (int)npc.Center.X, (int)npc.Center.Y, NPCID.WaterSphere);
                     if (sphereIdx < Main.maxNPCs)
                     {
                         Main.npc[sphereIdx].velocity = shootVel;
@@ -114,7 +114,7 @@ namespace DZT.Content.Bosses
                 npc.ai[1] += 1f; // 施法次数 +1
 
                 // 如果已经施法 5 次，进入传送倒计时
-                if (npc.ai[1] >= 5f)
+                if (npc.ai[1] >= CastsPerTeleport)
                     npc.localAI[2] = 60f;
                 else
                     npc.ai[0] = 120f; // 没满 5 次，重置冷却继续攻击
@@ -142,10 +142,12 @@ namespace DZT.Content.Bosses
 
     internal class WaterSphereNPC : GlobalNPC
     {
+        private const int WaterSphereMaxReflectCount = 2; // 弹幕最多可反弹次数
+
         public override bool PreAI(NPC npc)
         {
             if (!ModContent.GetInstance<DZTWorldSystem>().DZTActive) return true;
-            if (npc.type != SkeletronAIOverride.WaterSphereNPCID) return true;
+            if (npc.type != NPCID.WaterSphere) return true;
             npc.dontTakeDamage = npc.ai[0] == 1f; // 不可摧毁状态强制无敌
             return true; // 正常执行水球飞行追踪
         }

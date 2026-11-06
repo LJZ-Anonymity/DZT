@@ -121,6 +121,10 @@ namespace DZT.Content.Bosses
         private const float SegmentFollowSpeed = 0.35f;
         private const float SegmentMaxSpeed = 20f;
 
+        private const float SegmentShootChanceMultiplier = 1.5f; // 体节弹幕概率提升倍率（+50%）
+        private const float SpikyBallDamageMultiplier = 0.8f; // 尖钉球伤害倍率（-20%）
+        private const float SegmentDamageReductionPerSegment = 0.01f; // 每体节减伤比例
+
         // ==========================================
         // 弧线参数化（统一"边 + 旋向"）
         // ==========================================
@@ -743,7 +747,7 @@ namespace DZT.Content.Bosses
             if (headState.SegmentShootTimer % interval != 0) return;
             if (Main.netMode == NetmodeID.MultiplayerClient) return;
 
-            const float finalChance = 0.02f * 1.5f;
+            const float finalChance = 0.02f * SegmentShootChanceMultiplier;
             for (int i = 0; i < Main.maxNPCs; i++)
             {
                 NPC seg = Main.npc[i];
@@ -810,7 +814,7 @@ namespace DZT.Content.Bosses
             if (!ModContent.GetInstance<DZTWorldSystem>().DZTActive) return;
             if (npc.type < NPCID.EaterofWorldsHead || npc.type > NPCID.EaterofWorldsTail) return;
             if (projectile.type == ProjectileID.SpikyBall)
-                modifiers.FinalDamage *= 0.8f;
+                modifiers.FinalDamage *= SpikyBallDamageMultiplier;
             ApplySegmentDamageReduction(ref modifiers);
         }
 
@@ -824,7 +828,7 @@ namespace DZT.Content.Bosses
         private static void ApplySegmentDamageReduction(ref NPC.HitModifiers modifiers)
         {
             int aliveSegments = CountAliveEaterOfWorldsSegments();
-            float reduction = MathHelper.Clamp(aliveSegments * 0.01f, 0f, 0.6f);
+            float reduction = MathHelper.Clamp(aliveSegments * SegmentDamageReductionPerSegment, 0f, 1);
             modifiers.FinalDamage *= 1f - reduction;
         }
 

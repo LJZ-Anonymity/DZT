@@ -8,12 +8,15 @@ namespace DZT.Content.Bosses
 {
     internal class PlanteraAIOverride : GlobalNPC
     {
+        private const float ProjectileCooldownReduction = 0.3f; // localAI[1] 每帧额外加速比例
+        private const int ReflectChanceDenominator = 3; // 触手反弹概率分母（1/3）
+
         public override void AI(NPC npc)
         {
             if (!ModContent.GetInstance<DZTWorldSystem>().DZTActive) return;
             if (npc.type == NPCID.Plantera && npc.aiStyle == NPCAIStyleID.Plantera)
             {
-                npc.localAI[1] += 0.3f; // 世纪之花射弹冷却降低 30%
+                npc.localAI[1] += ProjectileCooldownReduction; // 世纪之花射弹冷却降低 30%
             }
         }
 
@@ -23,7 +26,7 @@ namespace DZT.Content.Bosses
             if (!ModContent.GetInstance<DZTWorldSystem>().DZTActive) return;
             if (npc.aiStyle != NPCAIStyleID.PlanteraHook) return;
             if (!projectile.friendly || projectile.hostile) return;
-            if (!Main.rand.NextBool(3)) return;
+            if (!Main.rand.NextBool(ReflectChanceDenominator)) return;
 
             modifiers.FinalDamage *= 0f;
             if (projectile.owner == Main.myPlayer)

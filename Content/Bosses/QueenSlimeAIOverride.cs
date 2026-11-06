@@ -8,7 +8,9 @@ namespace DZT.Content.Bosses
 {
     internal class QueenSlimeAIOverride : GlobalNPC
     {
-        private const int QueenSlimeGelAttackID = 926; // 二阶段弹幕 ID
+        private const int ReflectChanceDenominator = 10; // 反弹射弹概率分母（10%）
+        private const float DamageReduction = 0.2f; // 全程减伤比例
+        private const int GelAttackCount = 20; // 二阶段凝胶球数量
 
         public override bool PreAI(NPC npc)
         {
@@ -19,14 +21,14 @@ namespace DZT.Content.Bosses
                 {
                     if (Main.netMode != NetmodeID.MultiplayerClient)
                     {
-                        for (int i = 0; i < 20; i++)
+                        for (int i = 0; i < GelAttackCount; i++)
                         {
                             Vector2 velocity = Main.rand.NextVector2Unit() * 9f;
                             Projectile.NewProjectile(
                                 npc.GetSource_FromAI(),
                                 npc.Center,
                                 velocity,
-                                QueenSlimeGelAttackID,
+                                ProjectileID.QueenSlimeGelAttack,
                                 30,
                                 0f,
                                 Main.myPlayer
@@ -51,7 +53,7 @@ namespace DZT.Content.Bosses
         public override void ModifyIncomingHit(NPC npc, ref NPC.HitModifiers modifiers)
         {
             if (npc.type == NPCID.QueenSlimeBoss && ModContent.GetInstance<DZTWorldSystem>().DZTActive)
-                modifiers.FinalDamage *= 0.8f;
+                modifiers.FinalDamage *= (1f - DamageReduction);
         }
 
         public override void ModifyHitByProjectile(NPC npc, Projectile projectile, ref NPC.HitModifiers modifiers)
@@ -59,7 +61,7 @@ namespace DZT.Content.Bosses
             if (!ModContent.GetInstance<DZTWorldSystem>().DZTActive) return;
             if (npc.type != NPCID.QueenSlimeBoss) return;
             if (!projectile.friendly || projectile.hostile) return;
-            if (!Main.rand.NextBool(10)) return; // 10% 概率反弹
+            if (!Main.rand.NextBool(ReflectChanceDenominator)) return; // 10% 概率反弹
 
             modifiers.FinalDamage *= 0f; // 抵消本次伤害
             if (projectile.owner == Main.myPlayer) // 生成反弹弹幕
